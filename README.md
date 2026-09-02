@@ -1,6 +1,8 @@
 # 金庸江湖 · 文字 MUD
 
 > 金庸武侠题材同人单机游戏 · 文字叙事 + 即时战斗 · **单文件网页，零依赖，双击即玩**
+>
+> **▶ 在线试玩：<https://crypoto.github.io/jinyong-mud/>**
 
 一个纯前端实现的武侠 MUD 小游戏。没有服务器、没有数据库、没有构建步骤——只有 1 个 HTML 文件，打包了全部数据、逻辑与界面。基于《金庸武侠》世界观做了同人改编，聚焦「多修武学、华山论剑、机制克制」的养成与战斗循环。
 
@@ -10,12 +12,13 @@
 
 把 `index.html` 拖进任意现代浏览器（Chrome / Edge / Firefox）即可开玩。存档保存在浏览器 `localStorage`，也可在标题页「导出 / 导入」成 `.json` 随身带走。
 
-### 方式二：GitHub Pages
+### 方式二：在线试玩（GitHub Pages）
 
-本项目完全静态，可直接用 GitHub Pages 托管在线游玩：
-1. 仓库 `Settings → Pages`
-2. Source 选择 `main` 分支根目录
-3. 保存后访问 `https://<用户名>.github.io/jinyong-mud/`
+本项目已部署上线，可直接在线游玩：
+
+**👉 https://crypoto.github.io/jinyong-mud/**
+
+> 部署方式：仓库 `Settings → Pages`，Source 选择 `main` 分支根目录（含 `.nojekyll`）。后续同步到 `main` 的更新会自动重新构建生效。
 
 ### 方式三：本地静态服务器（可选）
 
