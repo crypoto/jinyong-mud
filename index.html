@@ -1,0 +1,2609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金庸江湖 · 文字MUD</title>
+<style>
+:root{
+  --paper:#f3ead6;
+  --paper-2:#ece0c4;
+  --ink:#2b2418;
+  --ink-soft:#6b5f4c;
+  --ink-faint:#9a8d76;
+  --red:#9c2b1c;
+  --red-soft:#b8482f;
+  --gold:#a8862f;
+  --gold-soft:#c6a860;
+  --line:#d9c9a6;
+  --panel:rgba(255,252,243,0.72);
+  --combat:#8b1d12;
+  --system:#4a7a4f;
+  --reward:#9c7b12;
+  --dodge:#7a6a3f;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:"KaiTi","STKaiti","KaiTi_GB2312","SimSun","Songti SC",serif;
+  color:var(--ink);
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(200,170,110,.18), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(156,43,28,.06), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(120,95,50,.012) 0 1px, transparent 1px 3px),
+    var(--paper);
+  min-height:100%;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+#app{
+  width:min(1100px,100%);
+  height:min(780px,94vh);
+  display:flex;flex-direction:column;
+  background:linear-gradient(180deg, rgba(255,252,243,.55), rgba(240,229,201,.55));
+  border:1px solid var(--line);
+  box-shadow:0 10px 40px rgba(90,70,30,.16), inset 0 0 0 1px rgba(255,255,255,.4);
+  border-radius:6px;overflow:hidden;position:relative;
+}
+.topbar{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f7efdd,#efe3c8);}
+.topbar .seal{font-size:14px;font-weight:700;color:#fff;background:var(--red);padding:3px 7px;border-radius:3px;letter-spacing:1px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.topbar .title{font-size:18px;font-weight:700;letter-spacing:3px;}
+.topbar .spacer{flex:1;}
+.topbar .quick{font-size:12.5px;color:var(--ink-soft);}
+.topbar .quick b{color:var(--ink);}
+.topbar .menu-btn{font-size:13px;padding:4px 10px;}
+.screen{display:none;flex:1;flex-direction:column;min-height:0;}
+.screen.active{display:flex;}
+#screen-title{align-items:center;justify-content:center;text-align:center;gap:14px;position:relative;overflow:auto;padding:30px;}
+#screen-title .game-title{font-size:72px;font-weight:900;letter-spacing:18px;color:var(--ink);text-shadow:2px 3px 0 rgba(156,43,28,.18);margin-left:18px;}
+#screen-title .subtitle{font-size:15px;color:var(--ink-soft);letter-spacing:4px;}
+#screen-title .verses{font-size:13.5px;color:var(--ink-faint);letter-spacing:2px;line-height:2;}
+.title-sec{width:min(760px,100%);text-align:left;}
+.title-sec h3{font-size:15px;letter-spacing:4px;color:var(--red);border-left:4px solid var(--red);padding-left:8px;margin:6px 0 10px;}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;}
+.slot-card{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:12px;text-align:left;display:flex;flex-direction:column;gap:7px;min-height:150px;}
+.slot-card .slot-flag{font-size:13px;font-weight:700;color:#fff;background:var(--red);padding:2px 8px;border-radius:3px;letter-spacing:2px;align-self:flex-start;}
+.slot-card.empty{opacity:.85;border-style:dashed;}
+.slot-card.empty .slot-flag{background:var(--gold);}
+.slot-card .p-name{font-size:17px;font-weight:700;letter-spacing:2px;}
+.slot-card .p-meta{font-size:12px;color:var(--ink-faint);line-height:1.6;}
+.slot-card .slot-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
+.slot-card .slot-acts button{font-size:12.5px;padding:4px 9px;}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 18px;font-size:15px;border-radius:4px;transition:all .12s ease;}
+button:hover{border-color:var(--red-soft);color:var(--red);box-shadow:0 2px 8px rgba(156,43,28,.12);}
+button:disabled{opacity:.4;cursor:not-allowed;}
+.btn-lg{font-size:18px;padding:12px 40px;letter-spacing:4px;}
+.btn-primary{background:var(--red);border-color:var(--red);color:#fff;}
+.btn-primary:hover{background:#8b2416;color:#fff;}
+#screen-create{overflow:auto;padding:20px 28px;gap:14px;}
+#screen-create h2{font-size:18px;letter-spacing:2px;color:var(--red);border-left:4px solid var(--red);padding-left:10px;}
+.attr-row{display:flex;align-items:center;gap:14px;margin:6px 0;font-size:14.5px;}
+.attr-row .a-name{width:42px;font-weight:700;}
+.attr-row .a-bar{flex:1;height:13px;background:var(--paper-2);border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+.attr-row .a-fill{height:100%;background:linear-gradient(90deg,var(--red-soft),var(--red));width:0%;transition:width .2s;}
+.attr-row .a-val{width:20px;text-align:center;font-weight:700;}
+.attr-row .a-note{font-size:12px;color:var(--ink-faint);width:70px;}
+.attr-row button{width:24px;height:24px;padding:0;font-size:15px;line-height:1;}
+.alloc-wrap{border:1px solid var(--line);border-radius:6px;padding:12px 16px;background:var(--panel);}
+.alloc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.alloc-head .pts{font-size:14px;color:var(--red);font-weight:700;}
+.create-bottom{display:flex;justify-content:flex-end;align-items:center;gap:14px;flex-wrap:wrap;}
+.name-line{display:flex;align-items:center;gap:10px;font-size:15px;}
+.name-line input{font-family:inherit;font-size:16px;padding:6px 12px;border:1px solid var(--line);background:rgba(255,255,255,.5);border-radius:4px;color:var(--ink);width:180px;outline:none;}
+.name-line input:focus{border-color:var(--red-soft);}
+#screen-game .topbar{flex:0 0 auto;}
+.game-body{flex:1;display:flex;min-height:0;}
+.output{flex:1;overflow-y:auto;padding:16px 20px;line-height:1.9;font-size:15.5px;min-width:0;}
+.output .line{margin-bottom:2px;white-space:pre-wrap;word-break:break-word;}
+.output .combat{color:var(--combat);font-weight:700;}
+.output .system{color:var(--system);}
+.output .reward{color:var(--reward);font-weight:700;}
+.output .dmg{color:var(--red);}
+.output .heal{color:var(--system);}
+.output .npctalk{color:#3d5a80;border-left:3px solid #3d5a80;padding-left:10px;margin:6px 0;}
+.output .place{color:var(--ink);font-weight:700;font-size:16px;}
+.output .sep{color:var(--ink-faint);letter-spacing:4px;margin:10px 0 4px;}
+.output .quest{color:#7a3d80;font-weight:700;}
+.output .tagline{color:var(--ink-faint);font-size:13px;}
+.output .cursor{display:inline-block;width:9px;height:16px;background:var(--ink);vertical-align:-2px;animation:blink .8s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.sidebar{width:242px;flex:0 0 242px;border-left:1px solid var(--line);background:linear-gradient(180deg,#f6eeda,#ede1c4);padding:12px;overflow-y:auto;font-size:13px;}
+.sidebar .sb-title{font-weight:700;letter-spacing:2px;color:var(--red);border-bottom:1px dashed var(--line);padding-bottom:4px;margin:10px 0 6px;}
+.sidebar .sb-title:first-child{margin-top:0;}
+.sb-row{display:flex;justify-content:space-between;margin:2px 0;color:var(--ink-soft);gap:6px;}
+.sb-row b{color:var(--ink);}
+.sb-row .dim{color:var(--ink-faint);font-weight:400;}
+.bar{height:9px;background:var(--paper-2);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin:3px 0;}
+.bar.hp .fill{background:linear-gradient(90deg,#7c1f12,#c0392b);}
+.bar.mp .fill{background:linear-gradient(90deg,#1e4d66,#2e86ab);}
+.bar.foot .fill{background:linear-gradient(90deg,#6b5f4c,#a08c6a);}
+.bar .fill{height:100%;transition:width .25s;}
+.sb-loc{color:var(--gold);font-weight:700;}
+.sb-tag{font-size:11px;color:var(--ink-faint);}
+.controls{flex:0 0 auto;border-top:1px solid var(--line);padding:8px 16px;background:linear-gradient(0deg,#f7efdd,#f0e4ca);}
+#action-buttons{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+#action-buttons button{font-size:13.5px;padding:5px 12px;}
+.cmdline{display:flex;gap:8px;align-items:center;}
+.cmdline .prompt{color:var(--red);font-weight:700;font-size:15px;}
+.cmdline input{flex:1;font-family:inherit;font-size:14.5px;padding:6px 12px;border:1px solid var(--line);background:rgba(255,255,255,.5);border-radius:4px;color:var(--ink);outline:none;}
+.cmdline input:focus{border-color:var(--red-soft);}
+.cmdline button{font-size:14px;padding:6px 16px;}
+.modal-mask{position:fixed;inset:0;background:rgba(40,28,10,.35);display:none;align-items:center;justify-content:center;z-index:50;}
+.modal-mask.show{display:flex;}
+.modal{width:min(680px,94vw);max-height:84vh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.modal h3{color:var(--red);letter-spacing:2px;margin-bottom:12px;}
+.modal .close{float:right;cursor:pointer;color:var(--ink-faint);font-size:20px;line-height:1;}
+.modal p{line-height:1.9;font-size:14px;color:var(--ink-soft);margin:4px 0;}
+.modal code{background:var(--paper-2);padding:1px 6px;border-radius:3px;color:var(--red);}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);margin:4px 0;}
+.legend i{font-style:normal;font-weight:700;}
+.c-d1{color:#2e7d32;}.c-d3{color:#1565c0;}.c-d5{color:#6a1b9a;}.c-d7{color:#e65100;}.c-d9{color:#c62828;}
+/* —— 常驻小地图：独立占位区，日志在其下方滚动，永不互相遮挡 —— */
+.main-col{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
+.main-col .output{min-height:0;}
+#mm-dock{flex:0 0 auto;padding:10px 0 2px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
+#minimap{width:308px;max-width:calc(100vw - 64px);background:linear-gradient(180deg,rgba(255,251,240,.98),rgba(246,235,205,.96));border:1px solid var(--line);border-radius:8px;box-shadow:0 5px 16px rgba(90,70,30,.16);padding:7px 10px 6px;font-size:12px;}
+.mm-head{display:flex;align-items:baseline;gap:8px;border-bottom:1px dashed var(--line);padding-bottom:3px;margin-bottom:2px;}
+.mm-head .t{font-weight:700;letter-spacing:2px;color:var(--red);font-size:13px;}
+.mm-head .here{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft);}
+.mm-head .here b{color:var(--ink);}
+.mm-x{border:none;background:transparent;cursor:pointer;color:var(--ink-faint);font-size:14px;line-height:1;padding:0 3px;box-shadow:none;}
+.mm-x:hover{color:var(--red);}
+#minimap svg{display:block;}
+.mm-svg text{pointer-events:none;user-select:none;}
+.mm-foot{display:flex;justify-content:space-between;align-items:center;margin-top:2px;font-size:11px;color:var(--ink-faint);}
+.mm-foot b{cursor:pointer;color:var(--gold);}
+.mm-foot b:hover{color:var(--red);}
+#mm-pill{display:none;align-items:center;gap:5px;font-size:13px;padding:5px 12px;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--ink-soft);box-shadow:0 3px 10px rgba(90,70,30,.14);}
+#mm-pill b{color:var(--red);}
+#mm-pill:hover{color:var(--red);}
+.cmd-lnk{cursor:pointer;color:var(--gold);border-bottom:1px dashed transparent;white-space:nowrap;}
+.cmd-lnk:hover{color:var(--red);border-bottom-color:var(--red-soft);}
+/* —— 实时战斗 HUD（武神传说式自动战斗） —— */
+#battle-bar{display:none;flex:0 0 auto;margin:6px 20px 0;padding:8px 10px;gap:10px;
+  background:linear-gradient(180deg,rgba(156,43,28,.07),rgba(156,43,28,.02));
+  border:1px solid rgba(156,43,28,.3);border-radius:8px;
+  grid-template-columns:170px 170px minmax(0,1fr) 108px;}
+#battle-bar.show{display:grid;}
+.bt-pane{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.bt-pane .bt-title{font-size:13.5px;font-weight:700;letter-spacing:1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#bt-foe-nm{color:var(--red);}
+.bt-txt{font-size:11.5px;color:var(--ink-soft);line-height:1.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bt-txt b{color:var(--red);}
+.bt-skills{display:flex;flex-wrap:wrap;align-content:flex-start;gap:5px;min-width:0;}
+.sk-btn{position:relative;min-width:72px;flex:1 1 auto;max-width:96px;padding:4px 5px 5px;text-align:center;border-radius:5px;
+  border:1px solid var(--line);background:var(--panel);box-shadow:0 1px 3px rgba(90,70,30,.14);transition:none;}
+.sk-btn b{display:block;font-size:13px;color:var(--ink);}
+.sk-btn i{display:block;font-style:normal;font-size:10.5px;line-height:1.5;color:var(--ink-faint);}
+.sk-btn i.mp{color:var(--red);}
+.sk-btn:hover{border-color:var(--red-soft);}
+.sk-btn.on{border-color:var(--red);box-shadow:0 0 0 1px var(--red);}
+.sk-btn.t1{border-top:2px solid #2e86ab;}
+.sk-btn.t2{border-top:2px solid #7a3d80;}
+.sk-btn[disabled]{opacity:.62;box-shadow:none;}
+.sk-btn .cd{position:absolute;inset:-1px;display:flex;align-items:center;justify-content:center;background:rgba(44,34,14,.66);color:#ffe9c9;border-radius:5px;font-size:16px;font-weight:700;letter-spacing:1px;}
+.bt-tools{display:flex;flex-direction:column;justify-content:flex-start;gap:5px;}
+.bt-tools button{font-size:12px;padding:3px 4px;width:100%;}
+.bt-tools .tl{color:var(--ink-soft);font-size:10.5px;line-height:1.3;}
+@media (max-width:860px){ #battle-bar{grid-template-columns:150px 150px 1fr;} .bt-tools{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;} }
+@media (max-width:700px){ #minimap{display:none!important;} #mm-pill{display:inline-flex!important;} }
+@media (max-width:820px){
+  .sidebar{display:none;}
+  .slots{grid-template-columns:1fr;}
+  #app{height:96vh;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ================= 标题屏：3 存档栏位 ================= -->
+  <div id="screen-title" class="screen active">
+    <div class="seal" style="position:absolute;top:24px;left:24px;">江湖</div>
+    <h1 class="game-title">金庸江湖</h1>
+    <div class="subtitle">—— 文字 MUD · 放置挂机 · 单机版 ——</div>
+    <div class="verses">飞雪连天射白鹿　笑书神侠倚碧鸳<br>一入江湖岁月催　仗剑走天涯</div>
+    <div class="title-sec">
+      <h3>选择存档</h3>
+      <div class="slots" id="slot-list"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-lg" onclick="showHelp()">江湖须知</button>
+    </div>
+  </div>
+
+  <!-- ================= 创建屏：散人出身 + 调根骨 ================= -->
+  <div id="screen-create" class="screen">
+    <h2>一、立名号</h2>
+    <div class="name-line">
+      <span>少侠大名：</span>
+      <input id="name-input" maxlength="6" placeholder="请输入姓名">
+    </div>
+    <div class="tagline" style="font-size:13px;color:var(--ink-faint);margin-top:4px;">（你本是无门无派的江湖散人。师门需在江湖中寻访引路人拜入——详见「江湖须知」。）</div>
+    <h2>二、调根骨</h2>
+    <div class="alloc-wrap">
+      <div class="alloc-head">
+        <span style="font-weight:700;letter-spacing:2px;">分配属性点</span>
+        <span class="pts">剩余点数：<b id="pts-left">20</b></span>
+      </div>
+      <div id="attr-alloc"></div>
+    </div>
+    <div class="create-bottom">
+      <span style="font-size:12.5px;color:var(--ink-faint);">臂力→攻击 · 身法→闪避/出手 · 悟性→内力/修炼速度 · 根骨→生命/防御 · 福缘→奇遇/掉落</span>
+      <button class="btn-primary" onclick="enterWorld()">闯荡江湖</button>
+    </div>
+  </div>
+
+  <!-- ================= 游戏屏 ================= -->
+  <div id="screen-game" class="screen">
+    <div class="topbar">
+      <div class="seal">江</div>
+      <div class="title">金庸江湖</div>
+      <div class="spacer"></div>
+      <div class="quick" id="quick-stats"></div>
+      <button class="menu-btn" onclick="showSkillsPanel()">武功</button>
+      <button class="menu-btn" onclick="showGearPanel()">装备</button>
+      <button class="menu-btn" onclick="showBag()">行囊</button>
+      <button class="menu-btn" onclick="showJournal()">纪事</button>
+      <button class="menu-btn" onclick="showMapPanel()">地图</button>
+      <button class="menu-btn" onclick="saveGame()" title="手动存档">存档</button>
+      <button class="menu-btn" onclick="showHelp()">帮助</button>
+    </div>
+    <div class="game-body">
+      <div class="main-col">
+        <!-- 常驻小地图：独立占位区，日志在其下方滚动，永不互相遮挡 -->
+        <div id="mm-dock">
+          <div id="minimap"></div>
+          <button id="mm-pill" onclick="miniCollapse(false)" title="展开小地图"></button>
+        </div>
+        <!-- 实时战斗 HUD：仅战斗中显示（武神传说式自动战斗） -->
+        <div id="battle-bar">
+          <div class="bt-pane">
+            <div class="bt-title" id="bt-foe-nm">对手</div>
+            <div class="bar hp"><div class="fill" id="bt-foe-fill"></div></div>
+            <div class="bt-txt" id="bt-foe-hp"></div>
+            <div class="bt-txt" id="bt-foe-st"></div>
+          </div>
+          <div class="bt-pane">
+            <div class="bt-title" id="bt-me-nm">侠士</div>
+            <div class="bar hp"><div class="fill" id="bt-me-fill"></div></div>
+            <div class="bt-txt" id="bt-me-hp"></div>
+            <div class="bar mp" style="margin-top:2px;"><div class="fill" id="bt-me-fill-mp"></div></div>
+            <div class="bt-txt" id="bt-me-st"></div>
+          </div>
+          <div class="bt-skills" id="bt-skills"></div>
+          <div class="bt-tools" id="bt-tools"></div>
+        </div>
+        <div class="output" id="output"></div>
+      </div>
+      <aside class="sidebar" id="sidebar"></aside>
+    </div>
+    <div class="controls">
+      <div id="action-buttons"></div>
+      <div class="cmdline">
+        <span class="prompt">〉</span>
+        <input id="cmd-input" placeholder="输入指令：看 / 地图 / 武功 / 装备 / 行囊 / 纪事 / 帮助 / 去 地名 / 打坐 / 驿站" autocomplete="off">
+        <button onclick="submitCommand()">行</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 帮助弹窗 -->
+<div class="modal-mask" id="help-mask">
+  <div class="modal">
+    <span class="close" onclick="closeHelp()">×</span>
+    <h3>江湖须知</h3>
+    <p><b>【目标】</b>江湖尽头是华山论剑——天下第一非一人之功：需<span style="color:var(--red)">多修各类武功</span>方能逐级登顶（论剑·初/名/天下）。通关论剑并非结束，无尽排位在二期等候。</p>
+    <p><b>【出身】</b>开局为散人，可去悦来镇武馆寻王教头取入门武功，亦可寻各门派「引路人」拜师；转投他门代价低廉，旧武功永不遗忘。</p>
+    <p><b>【成长】</b>打怪与副本挂机得「经验」，经验只用来喂武功；城内打工得「银两」，银两用来买装备/拜师/传送。两条腿走路，缺一不可。</p>
+    <p><b>【修炼】</b>武功共九层：不值一提→初出茅庐→小有心得→登堂入室→熟能生巧→臻入化境→一代宗师→威震天下→返璞归真。在武功面板用经验「修炼」。内功/轻功被动与招式机制皆随层数成长，越练越见真章。</p>
+    <p><b>【战斗】</b>每战可同时装备 3 门外功 + 1 门内功 + 1 门轻功（合计5门）。武功分「段击/暴击/破防/点穴/用毒/斩杀/吸血/护盾/反弹/无敌」等机制，绝非数值换皮。</p>
+    <p><b>【标签 Boss】</b>强敌各有「机制标签」——铁壁（需破防）/蚀毒（毒雾需护盾）/迅捷（暴击连发需无敌闪避）/壁垒·姿态轮转（王重阳三段变招）。不带克制也能打赢，只是要硬磨更久。</p>
+    <p><b>【华山论剑】</b>论剑·初：外/内/轻各一门 Lv9 → 王重阳；论剑·名：共 10 门武功 ≥Lv7 → 各派绝学高手轮番；论剑·天下：共 15 门 ≥Lv7 且至少 2 门不同门派绝学 Lv9 → 全明星池与王重阳「姿态轮转」守擂。逐级解锁、不可跳级；散人亦可平权参战。</p>
+    <p><b>【挂机】</b>野外副本点可在线/离线挂机（离线按70%、上限8小时）；城内打工赚银两。脚力用于野外行走，随时间回复。</p>
+    <p><b>【装备】</b>武器/防具/饰品/腰带/靴子五槽。白→绿→蓝→紫→橙需打磨石强化，打磨石只能打怪掉落。换装时打磨颜色随槽位继承：旧装颜色高则自动灌注新装、旧装剥色回白，成果永远跟随槽位。</p>
+    <p><b>【指令】</b><code>状态</code> <code>地图</code> <code>武功</code> <code>装备</code> <code>行囊</code> <code>纪事</code> <code>帮助</code> <code>存档</code> <code>去 地名</code> <code>驿站</code> <code>看</code> <code>打坐</code></p>
+    <p><b>【存档】</b>自动保存每 30 秒一次；标题页可「导出」成 .json 文件带走，换设备后「导入」即可恢复。</p>
+  </div>
+</div>
+<div class="modal-mask" id="confirm-mask">
+  <div class="modal" style="width:min(420px,90vw);">
+    <h3 id="confirm-title">确认</h3>
+    <p id="confirm-text"></p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+      <button onclick="closeConfirm(false)">取消</button>
+      <button class="btn-primary" onclick="closeConfirm(true)">确认</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="import-file" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+/* =====================================================================
+   金庸江湖 · 单文件文字MUD（按 GDD v1.3 开发）
+   结构：A1 数据 → A2 核心/存档 → A3 UI → A4 世界/拜师/主线 → A5 经济/挂机/装备 → A6 战斗/启动
+   ===================================================================== */
+/* ======================= A1 数据配置（依据 GDD §3/§5/§7/§10） ======================= */
+
+// 武功档位：基础/进阶/高级/绝学（威力系数 1.0/1.3/1.6/2.0，GDD §5.4 + §13）
+const RARITY = ["基础","进阶","高级","绝学"];
+const TIER_COEF = [1,1.3,1.6,2];
+// 武功九层（GDD §5.2）：每层威力加成 = 1 + 0.15*层
+const LVL_NAME = ["不值一提","初出茅庐","小有心得","登堂入室","熟能生巧","臻入化境","一代宗师","威震天下","返璞归真"];
+const LVL_POW  = [1,1.15,1.3,1.45,1.6,1.75,1.9,2.05,2.2];
+const SK_EXP   = [100,175,300,525,920,1610,2820,4935]; // 升到下一层所需经验（共8段）
+const MAX_LEARN = 15; // 可学上限（GDD §5.1 v1.2 裁决）
+const TYPE_NAME = {0:"外功",1:"内功",2:"轻功"};
+// 属性
+const ATTRS = [
+  {key:"str",name:"臂力",note:"攻击"},
+  {key:"agi",name:"身法",note:"闪避·出手"},
+  {key:"int",name:"悟性",note:"内力·修炼"},
+  {key:"con",name:"根骨",note:"生命·防御"},
+  {key:"luck",name:"福缘",note:"奇遇·掉落"},
+];
+// 标签字典（GDD §5.3）
+const TAG_NAME = {m:"段击",crit:"会心",db:"破防",ig:"无视闪避",st:"点穴",dot:"毒伤",ex:"斩杀",cb:"连击",ls:"吸血",dm:"吸内",iv:"无敌",sh:"护盾",rf:"反弹",pa:"攻加成",pd:"防加成",ph:"血加成",ps:"速加成",pr:"回气",dodge:"身法闪避",df:"左右互搏"};
+// 武功类型：0外 1内 2轻；rarity: 0基础 1进阶 2高级 3绝学；tags: "m:18|ig" 形式
+const _SK = [
+// ——— 少林 ———
+["luohan","罗汉拳",0,0,2,"m:3"],
+["weituo","韦陀掌",0,1,3,"crit:0.2,1.5"],
+["dajin","大力金刚掌",0,2,5,"m:5|ig"],
+["yijinjing","易筋经",1,3,6,"pa:0.1|pd:0.1|sh:150"],
+["jingang","金刚不坏体",1,1,4,"rf:0.3|pd:0.12"],
+["yifu","一苇渡江",2,0,2,"ps:0.1|dodge"],
+// ——— 武当 ———
+["wdmian","武当绵掌",0,0,2,"m:3"],
+["rouyun","柔云剑法",0,1,3,"cb:0.25"],
+["taijiquan","太极拳",0,2,5,"rf:0.4|pd:0.12"],
+["taijijian","太极剑",0,3,6,"m:4|rf:0.5"],
+["chunyang","纯阳无极功",1,2,5,"pa:0.08|pr:5"],
+["tiyun","梯云纵",2,1,3,"iv:2|ps:0.1"],
+// ——— 丐帮 ———
+["gbquan","丐帮入门拳",0,0,2,"m:2"],
+["lianhua","莲花掌",0,1,3,"cb:0.3"],
+["dagou","打狗棒法",0,2,5,"m:6|st:0.2"],
+["xianglong","降龙十八掌",0,3,7,"m:18|ig"],
+["xiaoyaoyou","逍遥游",2,1,3,"ps:0.1|dodge"],
+["hunyuan","混元功",1,2,5,"pa:0.08|ph:0.15"],
+// ——— 华山 ———
+["hsjian","华山剑法",0,0,2,"m:3"],
+["sanjian","夺命连环三仙剑",0,1,4,"m:3|crit:0.25,1.5"],
+["zixia","紫霞神功",1,2,5,"pa:0.08|pr:5"],
+["dugu","独孤九剑",0,3,7,"db:0.5,2|ig"],
+["xixing","吸星大法",1,3,6,"ls:0.2|dm:0.3"],
+["huayue","华岳身法",2,1,3,"ps:0.1|dodge"],
+// ——— 峨眉 ———
+["emjian","峨眉剑法",0,0,2,"m:3"],
+["jinding","金顶绵掌",0,1,3,"cb:0.25"],
+["yitian","倚天剑法",0,2,5,"m:5|ex:0.3,0.5"],
+["emjiuyang","峨眉九阳功",1,3,6,"ph:0.2|pr:5"],
+["jiuyinzhua","九阴白骨爪",0,3,6,"dot:10,3|crit:0.25,1.5"],
+["emshenfa","峨眉身法",2,0,2,"dodge"],
+// ——— 古墓 ———
+["gmjian","古墓剑法",0,0,2,"m:3"],
+["yunvjian","玉女剑法",0,1,3,"m:2|cb:0.3"],
+["yunvxin","玉女心经",1,2,5,"pa:0.08|pr:5"],
+["anran","黯然销魂掌",0,3,6,"m:8|ex:0.3,0.5"],
+["meinvquan","美女拳法",0,1,3,"m:2|st:0.25"],
+["tianluo","天罗地网势",2,2,4,"iv:2|dodge"],
+// ——— 逍遥 ———
+["xyquan","逍遥拳",0,0,2,"m:2"],
+["zheshou","天山折梅手",0,1,4,"m:2|cb:0.3"],
+["beiming","北冥神功",1,2,6,"dm:0.3|pr:5"],
+["lingbo","凌波微步",2,3,5,"iv:3|dodge|ps:0.1"],
+["xiaowu","小无相功",1,1,4,"pa:0.06|pd:0.06"],
+["baihong","白虹掌力",0,2,5,"m:5|ig"],
+// ——— 明教 ———
+["mingdao","明教入门刀",0,0,2,"m:2"],
+["hanbing","寒冰绵掌",0,1,4,"m:3|dot:6,2"],
+["qiankun","乾坤大挪移",1,2,6,"rf:0.5|pd:0.1"],
+["jiuyang","九阳神功",1,3,7,"pa:0.1|ph:0.2|pr:6"],
+["shihou","狮吼功",0,2,5,"m:4|st:0.25"],
+["qingyi","青翼身法",2,1,3,"ps:0.12|dodge"],
+// ——— 通用·外功（散人路线，GDD §5.4 通用表） ———
+["taizu","太祖长拳",0,0,1,"m:2"],
+["wuhu","五虎断门刀",0,1,3,"crit:0.2,1.5"],
+["tiesha","铁砂掌",0,1,4,"m:3|dot:5,2"],
+["songfeng","松风剑法",0,1,3,"m:3"],
+["dianxue","点穴手",0,1,3,"st:0.3"],
+["yiyangzhi","一阳指",0,2,5,"m:5|ig"],
+["luoying","落英神剑掌",0,2,5,"m:4|cb:0.25"],
+["tanzhi","弹指神通",0,2,4,"ig|crit:0.25,1.5"],
+["kongming","空明拳",0,2,5,"m:3|rf:0.3"],
+["xuantie","玄铁剑法",0,3,7,"ig|db:0.5,2"],
+["zuoyou","左右互搏术",0,3,8,"df"],
+// ——— 通用·内功 ———
+["tuna","吐纳术",1,0,1,"ph:0.15"],
+["guixi","龟息功",1,1,3,"pr:4"],
+["jinzhong","金钟罩",1,2,5,"sh:100|rf:0.3"],
+["xiantian","先天功",1,2,5,"pa:0.08|pd:0.08|pr:5"],
+["jiuyin","九阴真经",1,3,7,"pa:0.1|ph:0.15|db:0.3,2|dot:8,2"],
+// ——— 通用·轻功 ———
+["caofei","草上飞",2,0,1,"ps:0.08"],
+["yanzi","燕子三抄水",2,1,2,"dodge|ps:0.08"],
+["lingao","灵鳌步",2,2,4,"iv:2|ps:0.08"],
+["luoxuan","螺旋九影",2,3,5,"iv:3|ps:0.12"],
+];
+const SK = {}; // id -> 武功对象
+function parseTags(s){ if(!s) return [];
+  return s.split("|").map(tok=>{ const p=tok.split(":"); return {k:p[0], a:p[1]?p[1].split(",").map(Number):[]}; });
+}
+_SK.forEach(r=>{ SK[r[0]]={id:r[0], name:r[1], type:r[2], rarity:r[3], mp:r[4], tags:parseTags(r[5])}; });
+
+// ——— 门派元信息 + 师傅链（GDD §7.3）。up[i]=从第 i 档升到第 i+1 档的条件。
+const SEC = {
+  shaolin:{nm:"少林寺",loc:"songshan",intro:"天下武功出少林。以易筋经为根基，外功刚猛，血厚防高。",
+    t:[{nm:"玄苦",teach:["luohan","yifu"]},
+       {nm:"空见",teach:["weituo","jingang"]},
+       {nm:"玄慈",teach:["dajin"]},
+       {nm:"扫地僧",teach:["yijinjing"],hint:"传闻：藏经阁前的老僧深藏不露……需三次在藏经阁前扫地(此寺中动手)"}],
+    up:[{skill:0,lv:3,gold:100,txt:"任一本门基础武功至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"任一本门进阶武功至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:6,gold:1200,txt:"扫地僧：三次造访藏经阁并扫地(藏经阁前 3 次)，且缴 1200 两"}],
+    conds:[{type:"sweep",n:3},{type:"skill",sid:"dajin",lv:6}]},
+  wudang:{nm:"武当派",loc:"wudang",intro:"张三丰所创，太极圆转，以柔克刚，后发制人。",
+    t:[{nm:"张翠山",teach:["wdmian"]},
+       {nm:"俞莲舟",teach:["rouyun","tiyun"]},
+       {nm:"宋远桥",teach:["taijiquan","chunyang"]},
+       {nm:"张三丰",teach:["taijijian"],hint:"传闻：太极练至化境，或可一睹真人风采"}],
+    up:[{skill:0,lv:3,gold:100,txt:"武当绵掌至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"柔云剑法/梯云纵至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:7,gold:1200,txt:"太极拳或太极剑至「一代宗师」(Lv7) 且缴 1200 两"}],
+    conds:[{type:"skillAny",sids:["taijiquan","taijijian"],lv:7}]},
+  gaibang:{nm:"丐帮",loc:"xiangyang",intro:"天下第一大帮，帮众遍天下，降龙十八掌为掌法之巅。",
+    t:[{nm:"低级长老",teach:["gbquan"]},
+       {nm:"鲁有脚",teach:["lianhua","xiaoyaoyou"]},
+       {nm:"黄蓉",teach:["dagou","hunyuan"]},
+       {nm:"乔峰",teach:["xianglong"],hint:"传闻：打狗棒法大成时，帮主乔峰会亲授降龙十八掌"}],
+    up:[{skill:0,lv:3,gold:100,txt:"丐帮入门拳至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"莲花掌/逍遥游至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:5,gold:1500,txt:"打狗棒法至「熟能生巧」(Lv5) 且缴 1500 两"}],
+    conds:[{type:"skill",sid:"dagou",lv:5}]},
+  huashan:{nm:"华山派",loc:"huashan",intro:"剑气之争的古老剑派，剑法锋锐，讲究一击制敌。",
+    t:[{nm:"低级弟子",teach:["hsjian"]},
+       {nm:"封不平",teach:["sanjian","huayue"]},
+       {nm:"岳不群",teach:["zixia"]},
+       {nm:"风清扬",teach:["dugu"],hint:"传闻：思过崖绝壁之上，似有隐世剑客……"},
+       {nm:"令狐冲",teach:["xixing"],hint:"传闻：笑傲奇遇——令狐师兄随缘现身"}],
+    up:[{skill:0,lv:3,gold:100,txt:"华山剑法至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"三仙剑/华岳身法至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:5,gold:1500,txt:"思过崖奇遇：多次探访后山绝壁(福缘越高越易遇到风清扬)"}],
+    conds:[{type:"luck",n:1}]},
+  emei:{nm:"峨眉派",loc:"emei",intro:"郭襄所创，倚天剑法凌厉，兼顾内功修为，巾帼不让须眉。",
+    t:[{nm:"低级弟子",teach:["emjian","emshenfa"]},
+       {nm:"周芷若",teach:["jinding"]},
+       {nm:"灭绝师太",teach:["yitian"]},
+       {nm:"郭襄",teach:["emjiuyang"],hint:"传闻：倚天剑法至化境，郭襄女侠会再现江湖"},
+       {nm:"周芷若·秘",teach:["jiuyinzhua"],hint:"传闻：峨眉山深处藏着九阴残篇……"}],
+    up:[{skill:0,lv:3,gold:100,txt:"峨眉剑法至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"金顶绵掌至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:6,gold:1500,txt:"倚天剑法至「臻入化境」(Lv6) 且缴 1500 两"}],
+    conds:[{type:"skill",sid:"yitian",lv:6}]},
+  gumu:{nm:"古墓派",loc:"gumu",intro:"终南山活死人墓，轻功绝世，玉女心经轻灵飘逸。",
+    t:[{nm:"古墓仆",teach:["gmjian"]},
+       {nm:"李莫愁",teach:["yunvjian","meinvquan"]},
+       {nm:"小龙女",teach:["yunvxin","tianluo"]},
+       {nm:"杨过",teach:["anran"],hint:"传闻：杨过与神雕行踪飘忽，玉女心经大成或能一见"}],
+    up:[{skill:0,lv:3,gold:100,txt:"古墓剑法至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"玉女剑法/美女拳法至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:5,gold:1500,txt:"玉女心经至「熟能生巧」(Lv5) 且缴 1500 两"}],
+    conds:[{type:"skill",sid:"yunvxin",lv:5}]},
+  xiaoyao:{nm:"逍遥派",loc:"wuliang",intro:"逍遥于天地之间，北冥神功吸人内力为己用，内力雄浑。",
+    t:[{nm:"苏星河",teach:["xyquan"]},
+       {nm:"李秋水",teach:["zheshou","xiaowu"]},
+       {nm:"天山童姥",teach:["beiming","baihong"]},
+       {nm:"无崖子",teach:["lingbo"],hint:"传闻：北冥与折梅手同修大成，可入石室拜无崖子"}],
+    up:[{skill:0,lv:3,gold:100,txt:"逍遥拳至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"天山折梅手/小无相功至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:4,gold:1500,txt:"北冥神功+天山折梅手皆至「登堂入室」(Lv4) 且缴 1500 两"}],
+    conds:[{type:"skillAll",sids:["beiming","zheshou"],lv:4}]},
+  mingjiao:{nm:"明教",loc:"guangming",intro:"光明顶上的圣火之教，乾坤大挪移妙用无穷，九阳神功一代绝学。",
+    t:[{nm:"低级弟子",teach:["mingdao"]},
+       {nm:"杨逍",teach:["hanbing","qingyi"]},
+       {nm:"谢逊",teach:["qiankun","shihou"]},
+       {nm:"张无忌",teach:["jiuyang"],hint:"传闻：乾坤大挪移有成者，教主张无忌亲授九阳神功"}],
+    up:[{skill:0,lv:3,gold:100,txt:"明教入门刀至「小有心得」(Lv3) 且缴 100 两"},
+        {skill:1,lv:4,gold:500,txt:"寒冰绵掌/青翼身法至「登堂入室」(Lv4) 且缴 500 两"},
+        {skill:2,lv:5,gold:1500,txt:"乾坤大挪移至「熟能生巧」(Lv5) 且缴 1500 两"}],
+    conds:[{type:"skill",sid:"qiankun",lv:5}]},
+};
+// 散人（通用武学）师傅链（GDD §7.6）：王教头→江湖老人→黄药师/一灯/周伯通→隐藏(独孤求败/黄裳/周伯通隐)
+// 解锁逻辑由 sanAvail(i) 统一判断（见 A4）
+const SAN_T = [
+  {nm:"王教头",loc:"yuelai",teach:["taizu","tuna","caofei"],say:"老夫看你是块练武的料，这三样本事先拿去！"},
+  {nm:"江湖老人",loc:"xiangyang",teach:["wuhu","tiesha","songfeng","dianxue","guixi","yanzi"],needTxt:"任一门基础武功≥Lv3 且缴 200 两",say:"江湖路远，老夫这几手傍身功夫，够你在中原横着走了。"},
+  {nm:"黄药师",loc:"taohua",teach:["luoying","tanzhi","lingao"],needTxt:"桃花岛机缘已至（首次登岛）且任意进阶武功≥Lv4，缴 500 两",say:"桃花影落飞神剑，碧海潮生按玉箫。既到岛上来，便是有缘。"},
+  {nm:"一灯大师",loc:"dali",teach:["yiyangzhi","xiantian"],needTxt:"任意进阶武功≥Lv4 且缴 500 两",say:"大理段氏一阳指，可通任督，亦可渡人。老衲传你。"},
+  {nm:"周伯通",loc:"zhongnan",teach:["kongming"],needTxt:"任意进阶武功≥Lv4 且福缘≥12，方能在终南山撞见老顽童",say:"嘿嘿，好玩好玩！你陪老顽童玩，老顽童教你空明拳！"},
+  {nm:"独孤求败·剑冢",loc:"huashan",teach:["xuantie"],needTxt:"剑冢奇遇：思过崖后山多次探访（福缘越高越易触发）",say:"纵横江湖三十余载，杀尽仇寇，败尽英雄……今日传你剑法，好生学。"},
+  {nm:"黄裳·九阴",loc:"zhongnan",teach:["jiuyin","luoxuan"],needTxt:"外/内/轻三类武功各≥Lv5，九阴奇遇自现",say:"《九阴真经》乃我毕生心血……你能走到这一步，已是天意。"},
+  {nm:"周伯通·隐",loc:"zhongnan",teach:["zuoyou"],needTxt:"空明拳至「熟能生巧」(Lv5) 后再来终南山寻他",say:"左手画方，右手画圆！这左右互搏之术，天下只有我老顽童会！"},
+];
+// ——— 世界地图（GDD §3.1）。kind: city/wild/peak；d 为难度档(1,3,5,6,7,9)
+const LOCS = {
+  yuelai:{nm:"悦来镇",kind:"city",d:1,desc:"一座热闹的江南小镇，南来北往的江湖客都爱在此歇脚。武馆的王教头整日带着徒弟打拳，茶楼里说书先生正讲到兴头。",ex:[["出","chengwai"]]},
+  chengwai:{nm:"襄阳城外",kind:"wild",d:1,dg:"shanzei",desc:"城外官道，荒草萋萋。常有山贼流寇出没劫道，官府张了榜文悬赏。",ex:[["进","yuelai"],["东","xiangyang"]]},
+  xiangyang:{nm:"襄阳城",kind:"city",d:3,desc:"中原重镇，城墙高耸。丐帮总舵设在此处，市集里铁匠铺、药铺、当铺一应俱全。",ex:[["西","chengwai"],["北","luoyang"]]},
+  luoyang:{nm:"洛阳",kind:"city",d:3,desc:"九朝古都，繁华甲于天下。东南去嵩山少林，西接长安古道。",ex:[["南","xiangyang"],["东南","songshan"],["西","changan"]]},
+  songshan:{nm:"嵩山·少林寺",kind:"wild",d:3,dg:"shaolin",desc:"千年古刹，梵音缭绕。藏经阁、罗汉堂错落有致，山门前常有香客往来。",ex:[["西北","luoyang"],["西","zhongnan"]]},
+  zhongnan:{nm:"终南山",kind:"wild",d:5,desc:"道教祖庭，山势清幽。后山有一处活死人墓，正是古墓派所在；山中隐士出没，传闻有高人潜修九阴。",ex:[["东","songshan"],["北","changan"],["入","gumu"],["西南","emei"]]},
+  emei:{nm:"峨眉山",kind:"wild",d:5,desc:"蜀中名山，云雾缭绕。金顶之上的峨眉派以倚天剑闻名天下，山道险峻。",ex:[["东北","zhongnan"]]},
+  gumu:{nm:"活死人墓",kind:"wild",d:5,desc:"古墓幽深，寒气逼人。杨过与小龙女曾隐居于此，神雕侠侣之名如雷贯耳。",ex:[["出","zhongnan"]]},
+  changan:{nm:"长安",kind:"city",d:5,desc:"大唐故都，气象万千。南望终南，东去华山，东南武当，西南通大理，是关中武林的枢纽。",ex:[["东","luoyang"],["东北","huashan"],["东南","wudang"],["南","zhongnan"],["西南","dali"]]},
+  wudang:{nm:"武当山",kind:"wild",d:5,desc:"七十二峰朝大顶，真武大殿庄严肃穆。张三丰真人曾在此悟出太极之道。",ex:[["西北","changan"]]},
+  huashan:{nm:"华山",kind:"wild",d:5,dg:"siya",desc:"奇险天下第一山。华山派立于山腰，后山绝壁与剑冢深藏云雾之中。",ex:[["西南","changan"],["上","huading"]]},
+  huading:{nm:"华山之巅",kind:"peak",d:9,desc:"峰顶绝境，一览众山小。此乃武林中人心中的圣地——华山论剑之处。",ex:[["下","huashan"]]},
+  dali:{nm:"大理",kind:"city",d:6,desc:"南诏古国，风花雪月。段氏皇族崇信佛法，城外无量山与东海桃花岛皆藏奇人。",ex:[["东北","changan"],["东南","wuliang"],["北","guangming"]]},
+  wuliang:{nm:"无量山",kind:"wild",d:6,dg:"lunghuan",desc:"大理无量山，山花烂漫，深涧之中似有琅嬛福地，逍遥派遗迹藏于山腹。",ex:[["西北","dali"],["东北","taohua"]]},
+  taohua:{nm:"东海桃花岛",kind:"wild",d:6,desc:"东海孤岛，桃花缤纷。东邪黄药师的居所，奇门遁甲布于岛上，寻常人进得来出不去。",ex:[["西南","wuliang"]]},
+  guangming:{nm:"光明顶",kind:"city",d:7,desc:"明教总坛，巍峨险峻，圣火长明。教众无数，江湖人称「魔教」，实则侠义为先。",ex:[["南","dali"],["东北","heimuya"]]},
+  heimuya:{nm:"黑木崖",kind:"city",d:7,desc:"日月神教总坛，山崖漆黑如墨，气氛森然。据说东方不败就隐居崖顶。",ex:[["西南","guangming"]]},
+};
+// ——— 敌人（GDD §7.4/§7.4.1）
+// row: id,name,d,hp,atk,def,exp,gold,stone,desc[,mech] ;
+// mech 标签 Boss 机制：iron=铁壁(无破防减伤) iron2=强化铁壁 poison=蚀毒(毒雾) swift=迅捷(暴击连发) stance=壁垒·姿态轮转
+const EN = {};
+const _EN = [
+["shanzei","山贼",1,45,8,2,16,6,"low","一个手持钢刀的粗壮汉子，专干拦路劫道的勾当。"],
+["caihua","采花贼",1,55,9,3,24,9,"low","轻功了得、四处祸害良家女子的淫贼。"],
+["menggu","蒙古兵",3,80,13,5,45,14,"mid","骁勇善战的蒙古骑兵，弯刀铮亮，杀气腾腾。"],
+["songdi","嵩山派弟子",3,95,15,6,60,20,"mid","嵩山派爪牙，出手阴狠，剑走偏锋。"],
+["xingxiu","星宿派弟子",5,125,18,8,95,34,"high","星宿老怪的徒子徒孙，用毒下作却不好对付。"],
+["heimu","黑木崖教众",5,150,21,9,120,45,"high","日月神教教众，剑法诡谲，忠心耿耿。"],
+["wangchong","西夏武士",6,170,23,10,160,60,"high","西夏一品堂高手，外家功夫扎实。"],
+["dongfang","东方不败",7,450,40,16,900,600,"rare","日月神教教主！葵花宝典诡异无伦，身法快如鬼魅。","swift"],
+["oyfeng","欧阳锋",7,420,38,15,750,480,"rare","西毒欧阳锋！蛤蟆功霸道绝伦，周身毒雾缭绕。","poison"],
+["jinlun","金轮法王",7,460,40,16,820,520,"rare","蒙古国师，龙象般若功催枯拉朽，一身横练金刚不坏。","iron"],
+["wangcy","王重阳",9,700,52,22,2000,1200,"rare","全真祖师，天下五绝之首！先天功至阳至刚。","stance"],
+// —— 副本守关 boss（战力高于同档野怪；b1 为无机制教学关） ——
+["b1","山贼头目",1,110,14,4,80,25,"low","啸聚山林的悍匪头子，手底下有几分真功夫。"],
+["b2","蒙古百夫长",3,210,22,9,260,80,"mid","蒙古军中悍将，膂力过人，重甲在身刀枪难入。","iron"],
+["b3","魔教长老",5,420,33,15,700,220,"high","昔年魔教十长老之一，被困思过崖数十年，一身戾气化蛊毒。","poison"],
+["b4","琅嬛守卫",6,600,38,17,1000,320,"high","守护琅嬛福地的傀儡机关人，百炼精钢铸就，破防方见破绽。","iron2"],
+["b5","蒙古千夫长",7,1050,52,22,1800,600,"rare","蒙古大军千夫长，金轮法王的亲传弟子，刀快如电、连发不歇。","swift"],
+];
+_EN.forEach(r=>{ EN[r[0]]={id:r[0],name:r[1],d:r[2],hp:r[3],atk:r[4],def:r[5],exp:r[6],gold:r[7],stone:r[8],desc:r[9],mech:r[10]||null,
+  boss:/^b\d+/.test(r[0])||r[8]==="rare"}; });
+// 机制标签的克制指引（GDD §7.4.1）——战斗开始/状态栏提示用
+const MECH_NM = {iron:"铁壁型",iron2:"铁壁型·强化",poison:"蚀毒型",swift:"迅捷型",stance:"壁垒·姿态轮转型"};
+const MECH_CNT = {iron:"此人身披重甲：无破防时仅受半伤。请携「破防」武功（独孤九剑/玄铁剑法/九阴真经）破其铁壁。",
+  iron2:"此傀儡坚逾精钢：无破防时几乎难伤分毫。破防后再尽全力输出。",
+  poison:"此人周身毒雾翻涌：每隔数息便会向你投毒，毒气无视闪避、蚀骨噬心。请备「护盾」武功抵消毒雾。",
+  swift:"此人出手快如电闪：招招奔雷、暴击连发。可用「无敌」「闪避」身法躲过锋芒。",
+  stance:"此人气息如渊，随气血起落轮转铁壁/迅捷/蚀毒三态——见招拆招，不可一味蛮攻！"};
+// 副本挂机点（GDD §9.1）：key->{loc, boss, exp/m, stone, txt}
+const DG = {
+  shanzei:{boss:"b1",exp:15,gold:1,stone:"low",txt:"山贼营地：篝火旁的山贼营盘，剿灭头目后可在此反复讨伐练功。"},
+  shaolin:{boss:"b2",exp:40,gold:2,stone:"mid",txt:"少林后山：历代高僧闭关之所，如今有蒙古武士盘踞。"},
+  siya:{boss:"b3",exp:90,gold:4,stone:"high",txt:"思过崖：华山绝壁之上的石窟，魔教长老的刻痕犹在。"},
+  lunghuan:{boss:"b4",exp:150,gold:7,stone:"high",txt:"琅嬛福地：逍遥派藏武之地，玉像前的蒲团还留着当年的温度。"},
+};
+// ——— 物品（药店） ———
+const ITEMS = {
+  jinchuang:{name:"金疮药",desc:"回复生命 150 点。",price:40,heal:150,mp:0},
+  yulu:{name:"玉露丸",desc:"回复内力 100 点。",price:45,heal:0,mp:100},
+  dahuandan:{name:"大还丹",desc:"回复生命 400 点。",price:160,heal:400,mp:0},
+};
+// ——— 装备（GDD §10）slot/等级基础值；颜色倍率 1/1.2/1.5/1.9/2.4 ———
+const SLOT_NM = {weapon:"武器",armor:"防具",trinket:"饰品",belt:"腰带",boots:"靴子"};
+const COLOR = ["白","绿","蓝","紫","橙"];
+const COLOR_X = [1,1.2,1.5,1.9,2.4];
+const GEAR_NAME = {
+  weapon:["青锋剑","镔铁刀","精钢剑","龙泉剑","秋水剑","含光剑","巨阙剑","倚天残刃","绝世神兵"],
+  armor:["粗布衣","皮甲","锁子甲","鱼鳞甲","软猬甲","玄铁甲","乌金甲","麒麟甲","天蚕宝甲"],
+  trinket:["木珠串","玉坠","暖玉","夜明珠","血珊瑚","舍利子","避尘珠","凤头钗","轩辕玉"],
+  belt:["布腰带","牛皮腰带","犀角带","白玉带","狮蛮带","紫金带","蛟皮扣","龙纹带","绦丝束带"],
+  boots:["草鞋","快靴","鹿皮靴","云纹靴","流云靴","登云履","梯云靴","踏雪无痕","御风履"],
+};
+const STONE_NM = {low:"低级打磨石",mid:"中级打磨石",high:"高级打磨石",rare:"稀有打磨石"};
+// 强化花费（GDD §10.3）：目标颜色(1绿..4橙) -> [stoneType:count]
+const POLISH_COST = [
+  [{low:2}],
+  [{low:5},{mid:2}],
+  [{mid:8},{high:3}],
+  [{high:15},{rare:5}],
+];
+// ——— 打工基准（GDD §9）：按城市难度 d 每分钟银两（10/36/60/72/84 …）经验=银两/20 ———
+const WORK_GOLD = {1:10,3:36,5:60,6:72,7:84};
+const FOOT_MAX = 24;
+// ——— 战斗平衡总表（GDD §13 v1.3 playtest：低爆发、高耐久） ———
+// 血线按「野怪 / 守关者」双轨独立标定（经模拟器逐档扫描校准）：
+//   小怪≈8~12s，副本守关 Boss 30~50s，五绝(稀有) 25~40s，千夫长≈65s，论剑 40~60s。
+const BAL = {
+  pAtk:0.5,    // 玩家招式（段击）总伤害系数——压住后期乘法爆发的关键旋钮
+  pPunch:0.9,  // 玩家普攻伤害系数
+  pDot:1,      // 玩家施加的毒伤系数
+  eAtk:1,      // 敌人攻击系数
+  minE:0.12,   // 敌人每击最低有效伤害=atk×该比例（保证后期护甲碾压后战斗仍可感）
+  hpMul:{1:5.8,3:6.8,5:8,6:8.2,7:6.6,9:8.6},      // 普通野怪血线（按难度档）
+  bossHpMul:{1:11,3:6.5,5:7,6:4.5,7:6.5,9:6.5},  // 守关/稀有绝顶血线（按难度档）
+};
+//#A1_END
+/* ======================= A2 核心：工具 / 状态 / 公式 / 存档 ======================= */
+const $ = id => document.getElementById(id);
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const rand = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const today = ()=>new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+
+const SAVE_META = "jyjh_meta_v1";
+const SAVE_PRE  = "jyjh_slot_";
+const SAVE_VER  = 3;
+
+let S = null;           // 当前完整会话 {slot, loc, P, combat, idle}
+let pendingSlot = 1;    // 新建时选中的存档栏
+
+function freshP(name){
+  return {
+    name: name || "无名氏",
+    sect: null,           // 门派 key 或 null（散人）
+    sectTier: 0,          // 门派内已解锁的师傅档位（0低~3隐）
+    sanTier: 1,           // 散人路线已解锁到第几位师傅（索引+1，含隐藏需特判）
+    attrs: {str:10,agi:10,int:10,con:10,luck:10},
+    gold: 60, expPool: 0,
+    learned: {},          // id -> {lv, exp(段内进度), spent(累计投入,用于遗忘返还)}
+    equipped: {outer:[], inner:null, light:null},
+    gear: {weapon:null,armor:null,trinket:null,belt:null,boots:null},
+    inv: {jinchuang:3,yulu:1},
+    polish: {low:0,mid:0,high:0,rare:0},
+    flags: {},            // 奇遇/任务 事件标记
+    visit: {},            // locId -> 到访次数
+    quest: 1,             // 主线进度（1~6）
+    transfer: 0,          // 转投门派次数（出师费递增）
+    foot: 24, footTs: Date.now(),
+    dgDone: {},           // 已通关副本 -> 可挂机
+    lunjian: 0,           // 华山论剑累计胜利次数
+    arenaHi: 0,           // 论剑已通关档位：0未通初 / 1已通初(解锁名) / 2已通名(解锁天下)
+    arenaT2: 0,           // 论剑·名 内部胜场（推进高手轮番，3人一轮）
+    arenaT3: 0,           // 论剑·天下 内部胜场（推进全明星/王重阳守擂）
+  };
+}
+
+/* ---------- 装备数值（GDD §10/§6.3） ---------- */
+function gearBase(slot,lvl){
+  const b = {weapon:{atk:4+lvl*3}, armor:{def:2+lvl*2}, trinket:{mp:18+lvl*12},
+             belt:{hp:30+lvl*16}, boots:{spd:1+lvl}}[slot];
+  return Object.assign({}, b);
+}
+function makeGear(slot,lvl,color){
+  const base = gearBase(slot,lvl);
+  const x = COLOR_X[color];
+  const g = {slot,lvl,color,name:GEAR_NAME[slot][clamp(lvl,1,9)-1]};
+  for(const k in base) g[k]=Math.round(base[k]*x);
+  return g;
+}
+function gearName(g){ return g? `${COLOR[g.color]}${g.name}`+`(Lv${g.lvl})` : "无"; }
+function recolorGear(g,color){ // 改变颜色并重算该件装备属性（GDD §10.3）
+  if(!g) return;
+  g.color=color;
+  const base=gearBase(g.slot,g.lvl), x=COLOR_X[color];
+  for(const k in base) g[k]=Math.round(base[k]*x);
+}
+
+/* ---------- 武功等级（GDD §5.2） ---------- */
+function lvlOf(P,id){ const e=P.learned[id]; return e? e.lv:0; }
+function maxLvOfRar(P,rar){ // 指定档位已学武功的最高层
+  let m=0; for(const id in P.learned){ const sk=SK[id]; if(sk.rarity===rar) m=Math.max(m,P.learned[id].lv); } return m;
+}
+function anyTypeLv(P,type){ let m=0; for(const id in P.learned){ const sk=SK[id]; if(sk.type===type) m=Math.max(m,P.learned[id].lv); } return m; }
+function skillTypeLv3(P){ // 三类各≥lv3 返回 true（黄裳 条件各≥5）
+  return anyTypeLv(P,0)>=5 && anyTypeLv(P,1)>=5 && anyTypeLv(P,2)>=5;
+}
+
+/* ---------- 被动与属性公式（GDD §6.3） ---------- */
+function lvMul(e, per){
+  // 武功「越练越强」：被动/机制数值随层数成长（GDD §5.2 v1.3）
+  return e? 1+(e.lv-1)*(per||0.06) : 1;
+}
+function passive(P,code){
+  // 汇总已装备武功的被动标签：pd/ph/ps/pr 需装于对应内/轻功位；rf 任意已装武功皆可
+  // v1.3：被动加成随武功自身层数成长（内功升级 → 气血/攻防真涨，而非一成不变）
+  let v=0;
+  const list=[];
+  P.equipped.outer.forEach(id=>list.push(id));
+  if(P.equipped.inner) list.push(P.equipped.inner);
+  if(P.equipped.light) list.push(P.equipped.light);
+  list.forEach(id=>{ const sk=SK[id], e=P.learned[id];
+    const m=lvMul(e,0.08);   // 被动类每层 +8%（满层 ≈ ×1.64），升级内功气血立竿见影
+    sk.tags.forEach(t=>{
+      if(t.k===code && (code!=="rf" || sk.type===0)) v+=(t.a[0]||0)*m;
+      if(t.k==="rf" && code==="rf") v+=(t.a[0]||0)*m;
+    });
+  });
+  return v;
+}
+/* 轻功「身法闪避」标签：装备带 dodge 的轻功显著提升闪避率（GDD §6.3 命中/闪避、§7.4.1 克制迅捷型） */
+function lightDodge(P){
+  const L=P.equipped.light; if(!L) return 0;
+  const sk=SK[L], e=P.learned[L]; if(!e) return 0;
+  let v=0;
+  sk.tags.forEach(t=>{ if(t.k==="dodge") v+=(t.a[0]||0.1)*lvMul(e,0.06); });
+  return v;
+}
+function getStats(P){
+  const A=P.attrs, g=P.gear;
+  const wAtk = g.weapon? g.weapon.atk:2;
+  const aDef = g.armor? g.armor.def:0;
+  const hpAdd= g.belt? g.belt.hp:0;
+  const mpAdd= g.trinket? g.trinket.mp:0;
+  const spd  = g.boots? g.boots.spd:0;
+  const pa = passive(P,"pa"), pd = passive(P,"pd"), ph = passive(P,"ph"),
+        ps = passive(P,"ps"), pr = passive(P,"pr");
+  const atk = Math.round((A.str*2 + wAtk) * (1+pa));
+  const def = Math.round((A.con + aDef) * (1+pd));
+  const maxHp = Math.round((120 + A.con*14) * (1+ph) + hpAdd);
+  const maxMp = Math.round((50 + A.int*10) * 1 + mpAdd);
+  const dodge = Math.min(0.55, 0.05 + (A.agi - 10)*0.006 + (spd>0? spd*0.003:0) + ps*0.5 + lightDodge(P));
+  const spdEff = A.agi + Math.round(spd*0.4);
+  return {atk,def,maxHp,maxMp,dodge,spdEff,pr};
+}
+function lvUpCheck(P,id){ // 返回是否升级并处理
+  const e=P.learned[id]; if(!e||e.lv>=9) return false;
+  if(e.exp >= SK_EXP[e.lv-1]){
+    e.exp -= SK_EXP[e.lv-1]; e.lv++; e.spent += SK_EXP[e.lv-2];
+    return true;
+  }
+  return false;
+}
+/* ---------- 存 档（GDD §四：3栏位 + localStorage 自动 + 导出导入） ---------- */
+function readMeta(){ try{ return JSON.parse(localStorage.getItem(SAVE_META)||"{}"); }catch(e){ return {}; } }
+function writeMeta(m){ try{ localStorage.setItem(SAVE_META, JSON.stringify(m)); }catch(e){} }
+function slotKey(n){ return SAVE_PRE+n; }
+function snapshot(){ // 全量快照
+  S.P.footTs = Date.now();
+  return {v:SAVE_VER, slot:S.slot, ts:Date.now(), name:S.P.name,
+          data:{loc:S.loc, P:S.P, idle:S.idle, quest:S.P.quest}};
+}
+function saveSlot(n){
+  if(!S){ return false; }
+  S.slot = n;
+  try{
+    localStorage.setItem(slotKey(n), JSON.stringify(snapshot()));
+    const m = readMeta(); m[n] = {name:S.P.name, ts:Date.now(), lv:totalSkillLv(S.P), sec:(S.P.sect?SEC[S.P.sect].nm:"散人")};
+    writeMeta(m);
+    return true;
+  }catch(e){ return false; }
+}
+function hasSlot(n){ try{ return !!localStorage.getItem(slotKey(n)); }catch(e){ return false; } }
+function loadSlot(n){
+  try{
+    const raw = localStorage.getItem(slotKey(n)); if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(!d || d.v!==SAVE_VER || !d.data || !d.data.P) return false;
+    S = {slot:n, loc:d.data.loc||"yuelai", P:d.data.P, combat:null, idle:d.data.idle||null};
+    // 老档补默认（v1.3 论剑分级）
+    if(S.P.arenaHi==null) S.P.arenaHi = 0;
+    if(S.P.arenaT2==null) S.P.arenaT2 = 0;
+    if(S.P.arenaT3==null) S.P.arenaT3 = 0;
+    if(!S.P.bag) S.P.bag = [];
+    if(!S.P.hp) S.P.hp=getStats(S.P).maxHp;
+    if(!S.P.mp) S.P.mp=getStats(S.P).maxMp;
+    S.P.hp=Math.min(S.P.hp,getStats(S.P).maxHp);
+    S.P.mp=Math.min(S.P.mp,getStats(S.P).maxMp);
+    return true;
+  }catch(e){ return false; }
+}
+function deleteSlot(n){ try{ localStorage.removeItem(slotKey(n)); const m=readMeta(); delete m[n]; writeMeta(m); }catch(e){} }
+function totalSkillLv(P){ let s=0; for(const k in P.learned) s+=P.learned[k].lv; return s; }
+function exportSlot(n){
+  if(!hasSlot(n)) return;
+  const d = JSON.parse(localStorage.getItem(slotKey(n)));
+  const meta = readMeta()[n]||{};
+  const blob = new Blob([JSON.stringify(d,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `金庸江湖_${d.data.P.name||"无名"}_${today()}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 200);
+}
+function importSlotTo(n){
+  pendingSlot = n;
+  const f = $("import-file");
+  f.value = "";
+  f.onchange = ()=>{
+    const file = f.files && f.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const d = JSON.parse(reader.result);
+        if(!d || d.v!==SAVE_VER || !d.data || !d.data.P || !d.data.P.learned) throw new Error("存档损坏或版本不符");
+        localStorage.setItem(slotKey(n), JSON.stringify(d));
+        const m = readMeta();
+        m[n] = {name:d.data.P.name||"无名", ts:d.ts||Date.now(), lv:totalSkillLv(d.data.P), sec:d.data.P.sect?SEC[d.data.P.sect].nm:"散人"};
+        writeMeta(m);
+        renderSlots();
+        alert("导入成功！大侠，欢迎回来。");
+      }catch(e){ alert("导入失败：" + e.message); }
+    };
+    reader.readAsText(file);
+  };
+  f.click();
+}
+function saveGame(){
+  if(!S) return;
+  const ok = saveSlot(S.slot);
+  if(ok) log('<span class="system">已存档。江湖路远，来日再会。</span>');
+  else log("存档失败：本地存储不可用。");
+}
+/* ---------- 存档槽 UI ---------- */
+function renderSlots(){
+  const m = readMeta();
+  const box = $("slot-list"); if(!box) return;
+  box.innerHTML = "";
+  for(let i=1;i<=3;i++){
+    const card = document.createElement("div");
+    const meta = m[i];
+    if(meta){
+      card.className = "slot-card";
+      card.innerHTML = `<div class="slot-flag">存档 ${i}</div>
+        <div class="p-name">${escapeHtml(meta.name)}</div>
+        <div class="p-meta">${meta.sec} · 武功合计 Lv.${meta.lv}<br>存档于 ${new Date(meta.ts).toLocaleString("zh-CN")}</div>
+        <div class="slot-acts">
+          <button class="btn-primary" onclick="continueGame(${i})">再续前缘</button>
+          <button onclick="startNewGame(${i})">覆盖新建</button>
+          <button onclick="exportSlot(${i})">导出</button>
+          <button onclick="importSlotTo(${i})">导入</button>
+          <button onclick="askDelete(${i})">删除</button>
+        </div>`;
+    }else{
+      card.className = "slot-card empty";
+      card.innerHTML = `<div class="slot-flag">存档 ${i}</div>
+        <div class="p-meta" style="flex:1;">空档位</div>
+        <div class="slot-acts">
+          <button class="btn-primary" onclick="startNewGame(${i})">踏入江湖</button>
+          <button onclick="importSlotTo(${i})">导入存档</button>
+        </div>`;
+    }
+    box.appendChild(card);
+  }
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+let confirmCb = null;
+function askDelete(i){
+  confirmCb = ()=>{ deleteSlot(i); renderSlots(); if(S&&S.slot===i){ location.reload(); } };
+  $("confirm-title").textContent = "删除存档 " + i;
+  $("confirm-text").textContent = "此操作不可恢复，确定要删除该存档吗？";
+  $("confirm-mask").classList.add("show");
+}
+function closeConfirm(val){
+  $("confirm-mask").classList.remove("show");
+  if(val && confirmCb){ const cb=confirmCb; confirmCb=null; cb(); }
+}
+//#A2_END
+/* ======================= A3 UI：日志 / 侧栏 / 面板 ======================= */
+let typeTimer=null;
+function setScreen(n){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+n).classList.add("active");
+}
+function log(html, cls){
+  const out=$("output");
+  const div=document.createElement("div");
+  div.className="line"+(cls? " "+cls:"");
+  div.innerHTML=html+'<span class="cursor"></span>';
+  out.querySelectorAll(".cursor").forEach(c=>c.remove());
+  out.appendChild(div);
+  out.scrollTop=out.scrollHeight;
+  return div;
+}
+function clearLog(){ $("output").innerHTML=""; }
+function sep(){ log('<span class="sep">— · — · — · — · —</span>'); }
+function rarCls(r){ return ["","rar1","rar2","rar3"][r]||""; }
+function fmtLv(lv){ return `第${lv}层·${LVL_NAME[lv-1]}`; }
+function tagTxt(t){
+  if(t.k==="m") return `段击×${t.a[0]}`;
+  if(t.k==="crit") return `会心 ${Math.round(t.a[0]*100)}%×${t.a[1]}`;
+  if(t.k==="db") return `破防 ${Math.round(t.a[0]*100)}%/${t.a[1]}回合`;
+  if(t.k==="st") return `点穴 ${Math.round(t.a[0]*100)}%`;
+  if(t.k==="dot") return `毒伤 ${t.a[0]}/${t.a[1]}回合`;
+  if(t.k==="ex") return `斩杀(血<${Math.round(t.a[0]*100)}% ×${1+t.a[1]})`;
+  if(t.k==="cb") return `连击 ${Math.round(t.a[0]*100)}%`;
+  if(t.k==="ls") return `吸血 ${Math.round(t.a[0]*100)}%`;
+  if(t.k==="dm") return `吸内 ${Math.round(t.a[0]*100)}%`;
+  if(t.k==="iv") return `无敌 ${t.a[0]}回合`;
+  if(t.k==="sh") return `护盾 ${t.a[0]}`;
+  if(t.k==="rf") return `反弹 ${Math.round(t.a[0]*100)}%`;
+  if(t.k==="ig") return `无视闪避`;
+  if(t.k==="dodge") return `闪避`;
+  if(t.k==="df") return `左右互搏`;
+  if(t.k==="pa") return `攻+${Math.round(t.a[0]*100)}%`;
+  if(t.k==="pd") return `防+${Math.round(t.a[0]*100)}%`;
+  if(t.k==="ph") return `血+${Math.round(t.a[0]*100)}%`;
+  if(t.k==="ps") return `速+${Math.round(t.a[0]*100)}%`;
+  if(t.k==="pr") return `回气+${t.a[0]}`;
+  return t.k;
+}
+function renderSidebar(){
+  if(!S) return;
+  const P=S.P, st=getStats(P), loc=LOCS[S.loc];
+  const hpPct=Math.round(P.hp/st.maxHp*100)||0;
+  const mpPct=Math.round(P.mp/st.maxMp*100)||0;
+  const footPct=Math.round(P.foot/FOOT_MAX*100);
+  const es=P.sect? `<b>${SEC[P.sect].nm}</b>`:"<b class='dim'>散人</b>";
+  const eqOuter=P.equipped.outer.map(id=>SK[id].name).join("、")||"—";
+  let sk="";
+  Object.keys(P.learned).forEach(id=>{
+    const skd=SK[id], e=P.learned[id];
+    sk+=`<div class="sb-row"><span>${skd.name}</span><b>${e.lv}层</b></div>`;
+  });
+  let idleHtml="";
+  if(S.idle){ const it=S.idle; idleHtml=`<div class="sb-row" style="color:var(--system);font-weight:700;">◇ 挂机中：${it.nm}${it.work?"(工)":""}</div>`; }
+  $("sidebar").innerHTML=`
+    <div class="sb-title">人物</div>
+    <div class="sb-row"><span>名号</span><b>${escapeHtml(P.name)}</b></div>
+    <div class="sb-row"><span>出身</span>${es}</div>
+    <div class="sb-row"><span>称号</span><b>${titleOf(P)}</b></div>
+    <div class="sb-row"><span>银两</span><b>${P.gold}</b><span class="dim">两</span></div>
+    <div class="sb-row"><span>武功经验池</span><b>${P.expPool}</b></div>
+    ${idleHtml}
+    <div class="sb-title">气血内力</div>
+    <div class="bar hp"><div class="fill" style="width:${hpPct}%"></div></div>
+    <div class="sb-row"><span>气血</span><b>${P.hp}/${st.maxHp}</b></div>
+    <div class="bar mp"><div class="fill" style="width:${mpPct}%"></div></div>
+    <div class="sb-row"><span>内力</span><b>${P.mp}/${st.maxMp}</b></div>
+    <div class="sb-row"><span>脚力</span><span class="dim">${P.foot}/${FOOT_MAX}</span></div>
+    <div class="bar foot"><div class="fill" style="width:${footPct}%"></div></div>
+    <div class="sb-title">属性</div>
+    <div class="sb-row"><span>攻 ${st.atk} · 防 ${st.def}</span></div>
+    <div class="sb-row"><span>臂力</span><b>${P.attrs.str}</b></div>
+    <div class="sb-row"><span>身法</span><b>${P.attrs.agi}</b></div>
+    <div class="sb-row"><span>悟性</span><b>${P.attrs.int}</b></div>
+    <div class="sb-row"><span>根骨</span><b>${P.attrs.con}</b></div>
+    <div class="sb-row"><span>福缘</span><b>${P.attrs.luck}</b></div>
+    <div class="sb-title">出招</div>
+    <div class="tagline">外功：${eqOuter}</div>
+    <div class="tagline">内功：${P.equipped.inner? SK[P.equipped.inner].name:"—"} · 轻功：${P.equipped.light? SK[P.equipped.light].name:"—"}</div>
+    <div class="sb-title">武功（${Object.keys(P.learned).length}/15）</div>
+    ${sk||'<div class="tagline">尚未习得武功</div>'}
+    <div class="sb-title">装备</div>
+    <div class="tagline">武:${gearName(P.gear.weapon)}</div>
+    <div class="tagline">衣:${gearName(P.gear.armor)}</div>
+    <div class="tagline">饰:${gearName(P.gear.trinket)}</div>
+    <div class="tagline">带:${gearName(P.gear.belt)} · 靴:${gearName(P.gear.boots)}</div>
+    <div class="sb-title">所在</div>
+    <div class="sb-loc">${loc.nm}</div>
+    <div class="tagline c-d${colorOf(loc.d)}">难度档 ${loc.d} · ${loc.kind==="city"?"城市(可驿站)":loc.kind==="peak"?"论剑之巅":"野外"}</div>
+  `;
+  $("quick-stats").innerHTML=`<b>${loc.nm}</b> · ${escapeHtml(P.name)} · 银${P.gold} · 池${P.expPool} · 血${P.hp}/${st.maxHp}`;
+  renderMinimap();
+}
+function colorOf(d){ return d<=2?1:d<=4?3:d<=6?5:d<=8?7:9; }
+function titleOf(P){
+  const t=totalSkillLv(P);
+  if(t>=38) return "一代宗师"; if(t>=28) return "威震天下"; if(t>=20) return "武林名宿";
+  if(t>=12) return "后起之秀"; if(t>=5) return "江湖新秀"; return "无名之辈";
+}
+function showActions(list){
+  const box=$("action-buttons"); box.innerHTML="";
+  list.forEach(a=>{
+    const b=document.createElement("button");
+    b.innerHTML=a.label;
+    b.onclick=a.fn;
+    if(a.disabled) b.disabled=true;
+    box.appendChild(b);
+  });
+}
+function homeBack(){ if(stateInCombat()) return; showActions(baseActions()); }
+function baseActions(){ return [{label:"返回",fn:()=>{}}]; }
+
+/* ---------- 武功面板：出招中的方可修炼；其余仅可装备 ---------- */
+function showSkillsPanel(){
+  const P=S.P;
+  clearLog(); sep();
+  log(`<span class="place">【武功】已学 ${Object.keys(P.learned).length}/${MAX_LEARN} · 经验池 ${P.expPool}</span>`);
+  log(`<span class="tagline">可装 3外+1内+1轻 共5门出招｜出招中的武功方可修炼，其余武功仅可装备</span>`);
+  const eqIds=[...P.equipped.outer, P.equipped.inner, P.equipped.light].filter(Boolean);
+  const otherIds=Object.keys(P.learned).filter(id=>!eqIds.includes(id));
+  const acts=[];
+  if(eqIds.length) log(`<span class="place">── 出招中（可修炼）──</span>`);
+  eqIds.forEach(id=>{
+    const sk=SK[id], e=P.learned[id]; if(!sk||!e) return;
+    const next=e.lv<9? SK_EXP[e.lv-1]-e.exp : 0;
+    const tagHtml = sk.tags.map(tagTxt).join("　");
+    log(`<span class="place">${sk.name}</span> [${RARITY[sk.rarity]}]·${TYPE_NAME[sk.type]} · ${fmtLv(e.lv)} ${e.lv>=9?"（圆满）":`（经验 ${e.exp}/${e.lv<9?SK_EXP[e.lv-1]:0}）`}`);
+    log(`<span class="tagline">${tagHtml}｜耗内力 ${sk.mp}</span>`);
+    if(e.lv<9) acts.push({label:`修炼「${sk.name}」${next>0?`（还需 ${next} 经验）`:""}`,fn:()=>investExp(id)});
+    acts.push({label:`卸下「${sk.name}」`,fn:()=>unequipSkill(id)});
+  });
+  if(otherIds.length) log(`<span class="place">── 未出招（仅可装备）──</span>`);
+  otherIds.forEach(id=>{
+    const sk=SK[id], e=P.learned[id]; if(!sk||!e) return;
+    const tagHtml = sk.tags.map(tagTxt).join("　");
+    const seat = sk.type===0? "外功槽" : sk.type===1? "内功槽" : "轻功槽";
+    const full = sk.type===0? P.equipped.outer.length>=3 : sk.type===1? !!P.equipped.inner : !!P.equipped.light;
+    log(`<span class="place">${sk.name}</span> [${RARITY[sk.rarity]}]·${TYPE_NAME[sk.type]} · ${fmtLv(e.lv)} ${e.lv>=9?"（圆满）":`（经验 ${e.exp}/${e.lv<9?SK_EXP[e.lv-1]:0}）`} ｜ <a class="cmd-lnk" onclick="askForget('${id}')">遗忘</a>`);
+    log(`<span class="tagline">${tagHtml}｜耗内力 ${sk.mp}${full? `｜<b>${seat}已满</b>`:""}</span>`);
+    if(!full) acts.push({label:`装备「${sk.name}」`,fn:()=>equipSkill(id)});
+  });
+  if(!eqIds.length && !otherIds.length){ log("你尚未习得任何武功，快去拜师学艺吧。"); }
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function investExp(id, amount){
+  const P=S.P, e=P.learned[id];
+  if(!e) return;
+  if(e.lv>=9){ log(`「${SK[id].name}」已至返璞归真，功德圆满。`); return showSkillsPanel(); }
+  if(P.expPool<=0){ log("经验池空空如也——去打怪或挂机攒经验吧。"); return; }
+  let amt = Math.min(P.expPool, amount||SK_EXP[e.lv-1]-e.exp);
+  P.expPool -= amt; e.exp += amt; e.spent += amt;
+  const before=e.lv;
+  while(e.lv<9 && e.exp>=SK_EXP[e.lv-1]){
+    e.exp -= SK_EXP[e.lv-1]; e.lv++;
+    log(`<span class="reward">✦ 「${SK[id].name}」臻入「${LVL_NAME[e.lv-1]}」！</span>`);
+  }
+  if(e.lv===9) log(`<span class="reward">✦✦ 「${SK[id].name}」已达「返璞归真」，天下罕逢敌手！</span>`);
+  else if(e.lv===before && amt>0){ /* 静默 */ }
+  renderSidebar();
+}
+function equipFit(type){
+  const P=S.P;
+  if(type===0) return P.equipped.outer.length<3;
+  if(type===1) return !P.equipped.inner;
+  if(type===2) return !P.equipped.light;
+  return false;
+}
+function equipSkill(id){
+  const P=S.P, sk=SK[id];
+  if(sk.type===0){
+    if(P.equipped.outer.length>=3){ log("外功已装备三门，请先卸下一门。"); return; }
+    if(P.equipped.outer.includes(id)) return;
+    P.equipped.outer.push(id);
+  }else if(sk.type===1){
+    if(P.equipped.inner) unequipSkill(P.equipped.inner,true);
+    P.equipped.inner=id;
+  }else{
+    if(P.equipped.light) unequipSkill(P.equipped.light,true);
+    P.equipped.light=id;
+  }
+  log(`<span class="system">你将「${sk.name}」纳入出招序列。</span>`);
+  onEnterLocation(S.loc);
+}
+function unequipSkill(id, silent){
+  const P=S.P;
+  P.equipped.outer=P.equipped.outer.filter(x=>x!==id);
+  if(P.equipped.inner===id) P.equipped.inner=null;
+  if(P.equipped.light===id) P.equipped.light=null;
+  if(!silent) log(`<span class="system">你卸下了「${SK[id].name}」。</span>`);
+  if(!silent) onEnterLocation(S.loc);
+}
+function askForget(id){
+  const sk=SK[id];
+  const e=S.P.learned[id];
+  if(!sk||!e) return;
+  const refund=Math.floor(e.spent*0.5);
+  confirmCb = ()=>{ forgetSkill(id,true); showSkillsPanel(); };
+  $("confirm-title").textContent = `遗忘「${sk.name}」`;
+  $("confirm-text").textContent = `散功返还 ${refund} 经验（累计投入的 50%），再学需重新拜师或寻访。确定遗忘吗？`;
+  $("confirm-mask").classList.add("show");
+}
+function forgetSkill(id, silent){
+  const P=S.P;
+  const e=P.learned[id];
+  const refund=Math.floor(e.spent*0.5);
+  delete P.learned[id];
+  P.equipped.outer=P.equipped.outer.filter(x=>x!==id);
+  if(P.equipped.inner===id) P.equipped.inner=null;
+  if(P.equipped.light===id) P.equipped.light=null;
+  P.expPool += refund;
+  if(!silent) log(`<span class="system">你遗忘了「${SK[id].name}」，散功返还 ${refund} 经验（50%）。</span>`);
+  renderSidebar();
+}
+
+/* ---------- 装备面板（含背包装备切换） ---------- */
+function showGearPanel(){
+  const P=S.P; clearLog(); sep();
+  log(`<span class="place">【装备】</span><span class="tagline"> 打磨石：${Object.keys(STONE_NM).map(k=>`${STONE_NM[k]}×${P.polish[k]||0}`).join(" · ")}</span>`);
+  const acts=[];
+  ["weapon","armor","trinket","belt","boots"].forEach(sl=>{
+    const g=P.gear[sl];
+    log(`${SLOT_NM[sl]}：${gearName(g)}${g?`（${Object.keys(g).filter(k=>/^(atk|def|hp|mp|spd)$/.test(k)).map(k=>`${k==="atk"?"攻":k==="def"?"防":k==="hp"?"血":k==="mp"?"气":k==="spd"?"速":k}:${g[k]}`).join(" · ")}）`:""}`);
+    const inBag=(P.bag||[]).filter(x=>x.slot===sl);
+    if(inBag.length){
+      inBag.forEach((bg,idx)=>{
+        const diff=g? (bg.atk||0)-(g.atk||0):1;
+        acts.push({label:`换装 ${COLOR[bg.color]}${bg.name} Lv${bg.lvl}${diff>0?"(提升)":diff<0?"(降低)":""}`,fn:()=>{
+          const oldG=g;
+          let msg=`你换上了${COLOR[bg.color]}${bg.name}。`;
+          if(oldG && oldG.color>bg.color){
+            // GDD §10.3 v1.3：打磨颜色随槽位继承——旧装颜色灌注新装，旧装剥色回白
+            const take=oldG.color;
+            recolorGear(bg,take);
+            recolorGear(oldG,0);
+            msg=`<span class="system">换装触发「淬色继承」：${COLOR[take]}${bg.name}承接旧装光泽！旧${gearName(oldG)}剥色回白，收入行囊（打磨成果永远跟随槽位）。</span>`;
+          }else if(oldG){
+            msg=`你换上了${COLOR[bg.color]}${bg.name}，${gearName(oldG)}收入行囊。`;
+          }
+          P.gear[sl]=bg; P.bag.splice(P.bag.indexOf(bg),1);
+          if(oldG) P.bag.push(oldG);
+          P.hp=Math.min(getStats(P).maxHp,P.hp); P.mp=Math.min(getStats(P).maxMp,P.mp);
+          log(msg);
+          renderSidebar();
+          showGearPanel();
+        }});
+      });
+    }
+  });
+  if(P.bag&&P.bag.length===0) log("行囊中暂无备用装备。");
+  if(P.bag&&P.bag.length){
+    log('<span class="tagline">行囊装备：' + P.bag.map(x=>`${COLOR[x.color]}${x.name}(${SLOT_NM[x.slot]})`).join("、") + '</span>');
+  }
+  acts.push({label:"强化装备颜色",fn:()=>showPolish()});
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function showPolish(){
+  const P=S.P; clearLog(); sep();
+  log(`<span class="place">【打磨·颜色强化】</span>（GDD §10.3：打磨石只能打怪/副本挂机获得；打磨颜色随槽位继承——换装自动灌注新装，永不白费）`);
+  const acts=[];
+  const slotOrder=["weapon","armor","trinket","belt","boots"];
+  slotOrder.forEach(sl=>{
+    const g=P.gear[sl]; if(!g) return;
+    if(g.color>=4){ log(`${SLOT_NM[sl]} ${gearName(g)} 已至最高品质。`); return; }
+    const cost=POLISH_COST[g.color];
+    const needTxt=cost.map(c=>Object.keys(c).map(k=>`${STONE_NM[k]}×${c[k]}`).join("+")).join(" 与 ");
+    const ok=cost.every(c=>Object.keys(c).every(k=>(P.polish[k]||0)>=c[k]));
+    log(`${SLOT_NM[sl]} ${gearName(g)} → 升级至「${COLOR[g.color+1]}」需要 ${needTxt}${ok?"":"（打磨石不足）"}`);
+    acts.push({label:`强化${SLOT_NM[sl]}至${COLOR[g.color+1]}`,disabled:!ok,fn:()=>{
+      cost.forEach(c=>Object.keys(c).forEach(k=>P.polish[k]-=c[k]));
+      const old=COLOR[g.color];
+      recolorGear(g,g.color+1);
+      P.hp=Math.min(getStats(P).maxHp,P.hp); P.mp=Math.min(getStats(P).maxMp,P.mp);
+      log(`<span class="reward">✦ ${SLOT_NM[sl]}「${g.name}」由${old}色晋升为${COLOR[g.color]}色，光华大盛！</span>`);
+      showPolish();
+    }});
+  });
+  acts.push({label:"返回装备",fn:()=>showGearPanel()});
+  showActions(acts);
+}
+
+/* ---------- 行囊 / 使用药品 ---------- */
+function showBag(){
+  const P=S.P; clearLog(); sep();
+  log(`<span class="place">【行囊】</span>`);
+  const acts=[];
+  let has=false;
+  Object.keys(P.inv).forEach(k=>{
+    if(!P.inv[k]) return; has=true;
+    const it=ITEMS[k];
+    log(`${it.name} × ${P.inv[k]} —— ${it.desc}${k==="jinchuang"||k==="yulu"||k==="dahuandan"?`（${it.price}两/颗）`:""}`);
+    acts.push({label:`服用 ${it.name}`,fn:()=>useItem(k)});
+  });
+  if(!has) log("行囊空空如也。可去城市药铺购买。");
+  if(P.bag&&P.bag.length){
+    log(`备用装备：${P.bag.map(x=>`${COLOR[x.color]}${x.name}(${SLOT_NM[x.slot]})`).join("、")}（去「装备」面板换装）`);
+  }
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function useItem(k){
+  const P=S.P, it=ITEMS[k];
+  if(!P.inv[k]) return;
+  if(P.hp>=getStats(P).maxHp && P.mp>=getStats(P).maxMp){ log("你气血内力充盈，无需用药。"); return; }
+  P.inv[k]--; P.hp=Math.min(getStats(P).maxHp,P.hp+it.heal); P.mp=Math.min(getStats(P).maxMp,P.mp+it.mp);
+  log(`你服下${it.name}，${it.heal?`生命+${it.heal}`:""}${it.mp?`内力+${it.mp}`:""}。`);
+  renderSidebar();
+}
+
+/* ---------- 状态 / 纪事 / 帮助 ---------- */
+function showStatus(){
+  const P=S.P, st=getStats(P); clearLog(); sep();
+  log(`<span class="place">【人物状态】${escapeHtml(P.name)}</span>  ·  ${P.sect?SEC[P.sect].nm:"江湖散人"} · ${titleOf(P)}`);
+  log(`银两 ${P.gold} 两 · 经验池 ${P.expPool} · 武功 ${Object.keys(P.learned).length}/${MAX_LEARN}`);
+  log(`气血 ${P.hp}/${st.maxHp} · 内力 ${P.mp}/${st.maxMp}`);
+  log(`攻击 ${st.atk} · 防御 ${st.def} · 闪避 ${Math.round(st.dodge*100)}% · 身法 ${st.spdEff}`);
+  log(`臂力 ${P.attrs.str} · 身法 ${P.attrs.agi} · 悟性 ${P.attrs.int} · 根骨 ${P.attrs.con} · 福缘 ${P.attrs.luck}`);
+  if(P.equipped.inner) log(`内功被动：${SK[P.equipped.inner].tags.filter(t=>["pa","pd","ph","pr"].includes(t.k)).map(tagTxt).join("、")||"—"}`);
+  if(P.equipped.light) log(`轻功被动：${SK[P.equipped.light].tags.filter(t=>["ps","dodge","iv"].includes(t.k)).map(tagTxt).join("、")||"—"}`);
+  log(`已通关副本：${Object.keys(P.dgDone).map(k=>DG[k].txt.split("：")[0]).join("、")||"暂无"}（通关后可在该副本挂机）`);
+  showActions([{label:"返回",fn:()=>onEnterLocation(S.loc)}]);
+}
+function showJournal(){
+  clearLog(); sep();
+  log(`<span class="place">【江湖纪事】</span>`);
+  showQuestLog();
+  const acts=[];
+  showActions(acts.concat([{label:"返回",fn:()=>onEnterLocation(S.loc)}]));
+}
+function showHelp(){ $("help-mask").classList.add("show"); }
+function closeHelp(){ $("help-mask").classList.remove("show"); }
+
+/* ---------- 创建流程 ---------- */
+let _alloc = {};
+function startNewGame(slotIdx){
+  pendingSlot = slotIdx||1;
+  _alloc={str:0,agi:0,int:0,con:0,luck:0};
+  $("pts-left").textContent="20";
+  $("name-input").value="";
+  renderAttrAlloc();
+  setScreen("create");
+}
+function renderAttrAlloc(){
+  const box=$("attr-alloc"); if(!box) return;
+  box.innerHTML="";
+  const pts=parseInt($("pts-left").textContent,10);
+  const base={str:10,agi:10,int:10,con:10,luck:10};
+  ATTRS.forEach(a=>{
+    const total=base[a.key]+_alloc[a.key];
+    const row=document.createElement("div");
+    row.className="attr-row";
+    row.innerHTML=`
+      <span class="a-name">${a.name}</span>
+      <button onclick="alloc('${a.key}',-1)">-</button>
+      <div class="a-bar"><div class="a-fill" style="width:${Math.min(100,(total-8)/12*100)}%"></div></div>
+      <span class="a-val">${total}</span>
+      <button onclick="alloc('${a.key}',1)">+</button>
+      <span class="a-note">${a.note}</span>`;
+    box.appendChild(row);
+  });
+}
+function alloc(key,delta){
+  let pts=parseInt($("pts-left").textContent,10);
+  if(delta>0&&pts<=0) return;
+  if(delta<0&&_alloc[key]<=0) return;
+  _alloc[key]+=delta; pts-=delta;
+  $("pts-left").textContent=pts;
+  renderAttrAlloc();
+}
+function enterWorld(){
+  const name=$("name-input").value.trim()||"无名氏";
+  const P=freshP(name);
+  for(const k in _alloc) P.attrs[k]+=_alloc[k];
+  // 王教头开局赠送三样本事（GDD §7.6）
+  ["taizu","tuna","caofei"].forEach(id=>{
+    P.learned[id]={lv:1,exp:0,spent:0};
+  });
+  P.equipped.outer=["taizu"]; P.equipped.inner="tuna"; P.equipped.light="caofei";
+  S={slot:pendingSlot, loc:"yuelai", P, combat:null, idle:null};
+  P.hp=getStats(P).maxHp; P.mp=getStats(P).maxMp;
+  enterGame(true);
+}
+function continueGame(n){
+  if(!loadSlot(n)){ alert("该存档不存在或已损坏。"); return; }
+  enterGame(false);
+}
+function enterGame(isNew){
+  setScreen("game");
+  renderSlotsIfNeeded();
+  clearLog(); sep();
+  if(isNew){
+    log(`<span class="place">【${LOCS[S.loc].nm}】</span> 你踏入了江湖。`);
+    log(`你乃无名散人，武馆王教头慷慨传你三样本事：<span style="color:var(--gold)">太祖长拳、吐纳术、草上飞</span>。`);
+    log("此刻你正站在悦来镇街头。去城外打山贼可得武功经验，镇里歇脚可回气血——江湖路远，且行且珍惜。");
+    questGuide(1);
+  }else{
+    settleOffline();
+    log(`<span class="place">【${LOCS[S.loc].nm}】</span> 欢迎回来，${escapeHtml(S.P.name)}。江湖还是那个江湖。`);
+    questGuide(S.P.quest);
+  }
+  sep();
+  onEnterLocation(S.loc, true);
+}
+function renderSlotsIfNeeded(){
+  if(document.querySelector("#screen-title").classList.contains("active")===false){ /* in-game, title not needed */ }
+}
+//#A3_END
+/* ======================= A4 世界：移动 / 拜师 / NPC / 主线 ======================= */
+const LOC_SECT = {songshan:"shaolin", wudang:"wudang", xiangyang:"gaibang", huashan:"huashan", emei:"emei", gumu:"gumu", wuliang:"xiaoyao", guangming:"mingjiao"};
+const SAN_LOC = {yuelai:[0], xiangyang:[1], taohua:[2], dali:[3], zhongnan:[4,6,7], huashan:[5]};
+const ENC_D = {1:["shanzei","caihua"],3:["menggu","songdi"],5:["xingxiu","heimu"],6:["wangchong","heimu"],7:["wangchong","heimu","oyfeng"]};
+
+function stateInCombat(){ return !!(S && S.combat); }
+
+function moveTo(locId, noLog){
+  const P=S.P, from=LOCS[S.loc], to=LOCS[locId];
+  // 行走消耗脚力（进入已解锁城市/峰顶无需；野外才扣）
+  if(to.kind==="wild"){
+    P.foot--;
+    if(P.foot<0){ P.foot=0; log("你双腿酸软，脚力耗尽——原地歇歇，稍后再走（脚力随时间回复）。"); return; }
+  }
+  if(from.kind==="wild"){ /* from wild leaving also used 1? only entering wild counts */ }
+  S.loc=locId;
+  if(!noLog) clearLog();
+  sep();
+  log(`<span class="place">【${to.nm}】</span>  <span class="c-d${colorOf(to.d)}">难度 ${to.d}</span> · ${to.kind==="city"?"城市":to.kind==="peak"?"论剑之巅":"野外"}`);
+  log(to.desc);
+  if(!P.visit[locId]) P.visit[locId]=0;
+  P.visit[locId]++;
+  if(to.kind==="city"&&P.visit[locId]===1) log(`<span class="system">首次踏足「${to.nm}」，此城已入图志，日后可在各城「驿站」间传送。</span>`);
+  sep();
+  onEnterLocation(locId, true);
+  renderSidebar();
+}
+function lookAround(){
+  const loc=LOCS[S.loc];
+  log(`你在【${loc.nm}】。${loc.desc}`);
+  const exs=loc.ex.map(e=>`${e[0]}→${LOCS[e[1]].nm}`);
+  if(exs.length) log(`可去：${exs.join("、")}。`);
+}
+function onEnterLocation(locId, alreadyLogged){
+  if(stateInCombat()) return;
+  if(S.P.hp<1) S.P.hp=1;
+  renderSidebar();
+  if(!alreadyLogged) clearLog();
+  const loc=LOCS[locId], P=S.P, acts=[];
+  // —— 出口 ——
+  loc.ex.forEach(e=>{
+    const t=LOCS[e[1]];
+    acts.push({label:`${e[0]} → ${t.nm}`, fn:()=>moveTo(e[1])});
+  });
+  // —— 城市功能：药铺 / 装备店 / 驿站 / 打工 ——
+  if(loc.kind==="city"){
+    acts.push({label:"逛市集（药铺·装备店）",fn:()=>showMarket()});
+    acts.push({label:"驿站（传送）",fn:()=>showStation()});
+    acts.push({label:"找活干（打工攒银两）",fn:()=>workPanel()});
+  }
+  // —— 野外：寻敌 + 副本 ——
+  if(loc.kind==="wild"){
+    if(ENC_D[loc.d]) acts.push({label:"四处寻敌",fn:()=>tryEncounter()});
+    if(loc.dg){
+      const dg=DG[loc.dg];
+      acts.push({label:`闯副本：${dg.txt}`,fn:()=>dungeonMenu(loc.dg)});
+    }
+  }
+  // —— 华山之巅：论剑（GDD §十一 v1.3 多修分级制：逐级解锁、不可跳级） ——
+  if(locId==="huading"){
+    const m=arenaMeta(P);
+    const tierTxt=[
+      `论剑·初：外/内/轻各一门 Lv9 → 王重阳（入门档）${m.p0?"✓已达标":"·未达标"}`,
+      `论剑·名：先通初 + 10 门武功 ≥Lv7 → 乔峰/张三丰/扫地僧 等各派绝学高手轮番${P.arenaHi>=1? (m.p1?"✓已达标":`（当前 ${countLv(P,7)}/10 门≥Lv7）`):"（需先通初）"}`,
+      `论剑·天下：先通名 + 15 门 ≥Lv7 + 至少 2 门不同门派绝学 Lv9 → 全明星池 & 王重阳「姿态轮转」守擂${P.arenaHi>=2? (m.p2?"✓已达标":`（当前 ${countLv(P,7)}/15 门≥Lv7、${diffSectJue9(P)}/2 家门派绝学 Lv9）`):"（需先通名）"}`
+    ];
+    log('<span class="place">【华山论剑 · 多修分级制】</span>云海翻腾，群山俯首。此处可见逐级解锁的论剑擂台——通关并非终点，无尽排位(二期)在等你。');
+    log(tierTxt.join('<br>'));
+    if(P.arenaHi>=1) log('<span class="reward">你已夺得「论剑·初」席位；若已通名，则「论剑·天下」中王重阳将以壁垒·姿态轮转守擂。</span>');
+    ["初","名","天下"].forEach((t,i)=>{ const s=arenaCheck(i,P);
+      acts.push({label:`⚔ 论剑·${t}${s.ok?"":"（条件未足）"}`,disabled:!s.ok,fn:()=>arenaFight(i)});
+    });
+    acts.push({label:"凭栏远眺",fn:()=>{ log("云海翻腾，群山俯首。你已站上武林之巅。"); }});
+  }
+  // —— 门派拜师/师傅（GDD §7） ——
+  const hereSec=LOC_SECT[locId];
+  if(hereSec){
+    const sc=SEC[hereSec];
+    if(P.sect===hereSec){
+      acts.push({label:`回到${sc.nm}（拜见师傅）`,fn:()=>sectMasterPanel(hereSec)});
+    }else{
+      const tag=P.sect? `另投他门 → ${sc.nm}`:`拜入 ${sc.nm}`;
+      acts.push({label:tag,fn:()=>joinSectPanel(hereSec)});
+    }
+  }
+  // —— 散人师傅 ——
+  if(SAN_LOC[locId]){
+    SAN_LOC[locId].forEach(i=>acts.push({label:`拜见 ${SAN_T[i].nm}`,fn:()=>sanTeacher(i)}));
+  }
+  // —— 悦来镇百晓生 ——
+  if(locId==="yuelai"){
+    acts.push({label:"茶楼听百晓生讲江湖",fn:()=>baixiaosheng()});
+  }
+  // —— 地点特殊事件 ——
+  extraLocEvents(locId, acts);
+  // —— 常用 ——
+  acts.push({label:"观察四周",fn:()=>lookAround()});
+  acts.push({label:"打坐调息",fn:()=>meditate()});
+  showActions(acts);
+  checkQuest();
+}
+function extraLocEvents(locId, acts){
+  const P=S.P;
+  if(locId==="songshan"){
+    acts.push({label:"藏经阁前扫地",fn:()=>{
+      P.flags.sweep=(P.flags.sweep||0)+1;
+      P.mp=Math.min(getStats(P).maxMp,P.mp+5);
+      log("你在藏经阁前执帚扫地，心如止水，内力隐有流转。");
+      if(P.flags.sweep>=3&&!P.learned.yijinjing) log('<span class="system">扫地老僧抬眼看你，似乎欲言又止……（传闻：玄慈方丈引荐处或有门路）</span>');
+      renderSidebar();
+    }});
+  }
+  if(locId==="huashan"){
+    if(!P.flags.feng) acts.push({label:"探思过崖绝壁（风清扬传说）",fn:()=>exploreSiyagu()});
+    if(!P.flags.jianzhong) acts.push({label:"深入后山寻剑冢（独孤求败）",fn:()=>exploreJianzhong()});
+  }
+  if(locId==="xiangyang"&&!P.flags.guo) acts.push({label:"拜访郭大侠",fn:()=>{
+    P.flags.guo=true;
+    log('<span class="npctalk">郭靖：小兄弟，侠之大者，为国为民。城外的山贼与蒙古探子时常滋扰乡民，你若替百姓分忧，郭某感激不尽。</span>');
+    questGuide(P.quest);
+  }});
+}
+/* ---------- 传送 / 打工 / 市集 ---------- */
+function showStation(){
+  clearLog(); sep();
+  log(`<span class="place">【驿站】</span> 你在 ${LOCS[S.loc].nm}。可传送至已解锁城市（10两/次），野外不可直达。`);
+  const P=S.P, acts=[];
+  Object.keys(LOCS).forEach(id=>{
+    const l=LOCS[id];
+    if(l.kind!=="city"||id===S.loc) return;
+    if(P.visit[id]){
+      acts.push({label:`传送至 ${l.nm}（难度${l.d}，10两）`,disabled:P.gold<10,fn:()=>{
+        P.gold-=10;
+        log(`<span class="system">你骑快马昼夜兼程，抵达${l.nm}。</span>`);
+        moveTo(id);
+      }});
+    }
+  });
+  if(acts.filter(a=>!a.disabled).length===0&&acts.length>0) log("传送费：10两。多去野外赚些盘缠吧。");
+  if(acts.length===0) log("你只解锁了当前一座城市，去野外探路可解锁更多城市。");
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function workPanel(){
+  clearLog(); sep();
+  const d=LOCS[S.loc].d;
+  const gpm=WORK_GOLD[d]||60;
+  log(`<span class="place">【找活干】</span> 本城店家缺人手：跑堂、押镖、算账……`);
+  log(`<span class="system">收益：约 ${gpm} 两/分钟，同时得少量武功经验（经验≈银两/20）。</span>`);
+  log('<span class="tagline">开始后将持续挂机，可随时「收工」。离线照常结算（70%，上限8h）。</span>');
+  showActions([
+    {label:"开始打工",fn:()=>startIdle({work:true,key:S.loc})},
+    {label:"返回",fn:()=>onEnterLocation(S.loc)}
+  ]);
+}
+function showMarket(){
+  clearLog(); sep();
+  const loc=LOCS[S.loc], P=S.P;
+  log(`<span class="place">【市集】${loc.nm}</span>`);
+  log('<span class="place">· 药铺</span>');
+  const acts=[];
+  Object.keys(ITEMS).forEach(k=>{
+    const it=ITEMS[k];
+    acts.push({label:`买 ${it.name} ×1（${it.price}两）`,disabled:P.gold<it.price,fn:()=>{
+      P.gold-=it.price; P.inv[k]=(P.inv[k]||0)+1;
+      log(`你购得${it.name}×1。`); renderSidebar(); showMarket();
+    }});
+  });
+  log('<span class="place">· 装备店</span>（本城可售等级：Lv'+loc.d+'，白'+(loc.d>=3?'/绿':'')+(loc.d>=5?'/蓝':'')+(loc.d>=7?'/紫':'')+'）');
+  ["weapon","armor","trinket","belt","boots"].forEach(sl=>{
+    const colors=loc.d>=7?3:loc.d>=5?2:loc.d>=3?1:0;
+    for(let c=0;c<=colors;c++){
+      const g=makeGear(sl,clamp(loc.d,1,9),c);
+      const price=Math.round((25+loc.d*20)*Math.pow(1.85,c));
+      acts.push({label:`买 ${gearName(g)}（${price}两）`,disabled:P.gold<price,fn:()=>{
+        P.gold-=price;
+        if(!P.bag) P.bag=[];
+        P.bag.push(g);
+        log(`你购得${COLOR[c]}${g.name}，放入行囊。去「装备」面板换装。`); renderSidebar(); showMarket();
+      }});
+    }
+  });
+  acts.push({label:"离开市集",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+/* ---------- 副本 ---------- */
+function dungeonMenu(dgKey){
+  clearLog(); sep();
+  const dg=DG[dgKey], P=S.P;
+  log(`<span class="place">【副本】${dg.txt}</span>`);
+  if(P.dgDone[dgKey]){
+    log(`<span class="system">守关者已被你击败！此处已是练功宝地。</span>`);
+    log(`<span class="tagline">副本挂机：经验 ${dg.exp}/分钟 · 银两 ${dg.gold}/分钟 · 可得打磨石（离线70%上限8h）。需脚力与战力支撑。</span>`);
+    showActions([
+      {label:"开始挂机",fn:()=>startIdle({work:false,key:dgKey})},
+      {label:"再次挑战守关者",fn:()=>startCombat(dg.boss)},
+      {label:"返回",fn:()=>onEnterLocation(S.loc)}
+    ]);
+  }else{
+    const e=EN[dg.boss];
+    const approx=Math.round(e.hp*(((e.boss?(BAL.bossHpMul||{}):BAL.hpMul)[e.d]||2)));
+    log(`守关者「<span class="combat">${e.name}</span>」盘踞于此（气血约 ${approx}）。击败它方能在此挂机修炼。`);
+    if(e.mech) log(`<span class="combat">【${MECH_NM[e.mech]}·${e.name}】${MECH_CNT[e.mech]}</span>`);
+    showActions([
+      {label:`挑战 ${e.name}`,fn:()=>startCombat(dg.boss)},
+      {label:"返回",fn:()=>onEnterLocation(S.loc)}
+    ]);
+  }
+}
+/* ---------- 战斗遭遇 ---------- */
+function tryEncounter(){
+  const d=LOCS[S.loc].d, pool=ENC_D[d]||["shanzei","caihua"];
+  const P=S.P;
+  // 高难度区偶遇绝顶高手
+  if(d>=7){
+    if(P.attrs.luck>14&&Math.random()<0.12) return startCombat("oyfeng");
+    if(Math.random()<0.1) return startCombat("jinlun");
+  }
+  const id=Math.random()<0.5? pick(pool): pick(pool);
+  return startCombat(id);
+}
+function meditate(){
+  const P=S.P, st=getStats(P);
+  const heal=Math.min(st.maxHp-P.hp, 15+P.attrs.con*2);
+  const mp=Math.min(st.maxMp-P.mp, 10+P.attrs.int*2);
+  P.hp+=heal; P.mp+=mp;
+  log(`你盘膝打坐，气沉丹田……回复生命 ${heal}、内力 ${mp}。`);
+  renderSidebar();
+}
+/* ---------- 拜师：加入门派 / 门派师傅 ---------- */
+function joinSectPanel(sectKey){
+  clearLog(); sep();
+  const sc=SEC[sectKey], P=S.P;
+  log(`<span class="place">【${sc.nm}】</span> ${sc.intro}`);
+  if(P.sect===sectKey){ log("你已是本门弟子。"); sectMasterPanel(sectKey); return; }
+  if(P.sect){
+    const fee=Math.min(2400, 300*Math.pow(2,P.transfer));
+    log(`<span class="system">你身属${SEC[P.sect].nm}。转投他门须向引路人缴「出师费」${fee}两，且散功当前经验池的一半——旧武功永不遗忘，新门派需从低级师傅重新拜起。</span>`);
+    log(`<span class="tagline">转投次数：${P.transfer}（出师费 ${300*Math.pow(2,P.transfer)>2400?2400:Math.round(300*Math.pow(2,P.transfer))}→翻倍递增，封顶2400）</span>`);
+    showActions([
+      {label:`另投${sc.nm}（出师费${fee}两）`,disabled:P.gold<fee,fn:()=>joinSect(sectKey,true)},
+      {label:"返回",fn:()=>onEnterLocation(S.loc)}
+    ]);
+  }else{
+    log('<span class="npctalk">引路人：这位少侠，我派武学源远流长，你若有心，此刻便可拜入山门。入门后自见低级师傅。</span>');
+    showActions([
+      {label:"拜入门下",fn:()=>joinSect(sectKey,false)},
+      {label:"返回",fn:()=>onEnterLocation(S.loc)}
+    ]);
+  }
+}
+function joinSect(sectKey, transfer){
+  const P=S.P, sc=SEC[sectKey];
+  if(transfer){
+    const fee=Math.min(2400, 300*Math.pow(2,P.transfer));
+    if(P.gold<fee){ log("盘缠不足。"); return; }
+    P.gold-=fee;
+    const lost=Math.floor(P.expPool*0.5);
+    P.expPool-=lost;
+    log(`<span class="system">你脱离${SEC[P.sect].nm}，散功 ${lost} 经验，缴出师费 ${fee} 两。</span>`);
+    P.transfer++;
+  }
+  P.sect=sectKey; P.sectTier=0;
+  log(`<span class="reward">✦ 你拜入「${sc.nm}」，从低级师傅「${sc.t[0].nm}」处学艺。</span>`);
+  renderSidebar();
+  sectMasterPanel(sectKey);
+}
+function sectMasterPanel(sectKey){
+  clearLog(); sep();
+  const sc=SEC[sectKey], P=S.P;
+  log(`<span class="place">【${sc.nm} · 拜见师傅】</span>`);
+  const acts=[];
+  sc.t.forEach((m,i)=>{
+    let avail=false, why="";
+    if(i===0) avail=true;
+    else if(i<=2){
+      const up=sc.up[i-1];
+      const needLv = i===1? 3 : i===2? 4 : up.lv;
+      // 需考察上一档师傅所授武功的最高层
+      const prevTeach=sc.t[i-1].teach;
+      const maxLv=Math.max(0,...prevTeach.map(id=>lvlOf(P,id)));
+      const needGold=up.gold;
+      avail = maxLv>=needLv && P.gold>=needGold;
+      why = `需「${prevTeach.map(id=>SK[id].name).join("、")}」任一门≥Lv${needLv}，且缴 ${needGold} 两。当前最高 Lv${maxLv}`;
+      if(avail){
+        acts.push({label:`引荐：拜见 ${m.nm}（缴${needGold}两）`,fn:()=>{ P.gold-=needGold; P.sectTier=i; log(`<span class="reward">✦ ${m.nm} 收下了你，倾囊相授在即。</span>`); sectMasterPanel(sectKey); }});
+      }else{ why+="（条件未足）"; }
+    }else{ // 隐藏师傅
+      avail=sectHiddenOk(sectKey,i);
+      why=m.hint||"需满足特殊条件";
+      if(avail&&P.sectTier<i) acts.push({label:`拜见 ${m.nm}（隐藏高人）`,fn:()=>{ P.sectTier=i; log(`<span class="reward">✦ 你机缘到了，${m.nm} 愿传你绝学！</span>`); sectMasterPanel(sectKey); }});
+      if(!avail) why="（" + why + "）";
+    }
+    if(i<=P.sectTier){
+      log(`· ${m.nm} ${i===0?"(低级)":i===1?"(中级)":i===2?"(高级)":"(隐藏)"} —— 授：${m.teach.map(id=>SK[id].name).join("、")}`);
+      m.teach.forEach(sid=>{
+        if(!P.learned[sid]){
+          acts.push({label:`学「${SK[sid].name}」(${RARITY[SK[sid].rarity]}·${TYPE_NAME[SK[sid].type]})`,fn:()=>learnSkill(sid,true)});
+        }
+      });
+    }else{
+      log(`· ${m.nm} —— ${why}`);
+    }
+  });
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function sectHiddenOk(sectKey, idx){
+  const P=S.P;
+  switch(sectKey){
+    case "shaolin": return (P.flags.sweep||0)>=3 && lvlOf(P,"dajin")>=6;
+    case "wudang": return Math.max(lvlOf(P,"taijiquan"),lvlOf(P,"taijijian"))>=7;
+    case "gaibang": return lvlOf(P,"dagou")>=5;
+    case "huashan": return idx===3? !!P.flags.feng : (!!P.flags.feng && lvlOf(P,"dugu")>=4);
+    case "emei": return idx===3? lvlOf(P,"yitian")>=6 : lvlOf(P,"emjiuyang")>=5;
+    case "gumu": return lvlOf(P,"yunvxin")>=5;
+    case "xiaoyao": return lvlOf(P,"beiming")>=4 && lvlOf(P,"zheshou")>=4;
+    case "mingjiao": return lvlOf(P,"qiankun")>=5;
+  }
+  return false;
+}
+function exploreSiyagu(){
+  const P=S.P;
+  if(P.sect!=="huashan" && lvlOf(P,"hsjian")<4 && !P.learned.dugu){
+    log("你攀上思过崖，石壁上刻痕森然，却不见人影。你武功尚浅，恐怕无缘得见前辈。");
+    return;
+  }
+  if(P.flags.feng){ log("风清扬已传你独孤九剑，再去打扰便是不敬。"); return; }
+  const chance=0.25+P.attrs.luck*0.03;
+  if(Math.random()<chance || lvlOf(P,"sanjian")>=5){
+    P.flags.feng=true;
+    log("绝壁之上，忽有一苍老声音：「有进无退！」");
+    log('<span class="npctalk">风清扬：既到此处，便是有缘。老朽传你「独孤九剑」——无招胜有招，你且记住了！</span>');
+    learnSkill("dugu",true);
+    if(P.sect==="huashan") log('<span class="system">（回华山派禀报，或可再遇隐世高人。）</span>');
+  }else{
+    log("思过崖云雾缭绕，唯闻风声如剑鸣。你遍寻不着，只得悻悻而归。（福缘越高越易相遇）");
+    P.flags.siTries=(P.flags.siTries||0)+1;
+  }
+  onEnterLocation(S.loc);
+}
+function exploreJianzhong(){
+  const P=S.P;
+  if(P.flags.jianzhong){ log("剑冢已空，唯剩「剑魔独孤求败」的刻字。"); return; }
+  if(anyTypeLv(P,0)<5){ log("你沿后山乱石行至一处断崖，山势险绝，自知内功尚浅，不敢再进。"); return; }
+  if(Math.random() < 0.2+P.attrs.luck*0.02 || lvlOf(P,"dugu")>=1){
+    P.flags.jianzhong=true;
+    log("乱石丛中竟藏着一座剑冢，冢前青石上刻着：剑魔独孤求败之墓。");
+    log("你跪拜三次，忽觉心神大震，石碑后竟有剑意涌入脑海——玄铁重剑之法！");
+    log('<span class="reward">✦ 你悟得了「玄铁剑法」！</span>');
+    learnSkill("xuantie",true);
+  }else{
+    log("剑冢所在扑朔迷离，你寻而不得，只拾得几枚铁胆。（多来几次，福缘会帮你）");
+  }
+  onEnterLocation(S.loc);
+}
+/* ---------- 散人师傅（GDD §7.6） ---------- */
+function sanAvail(i){
+  const P=S.P;
+  const paid=()=>!!P.flags["sanpay"+i];
+  const full=(base)=> paid()? base : Object.assign({costPaid:true},base);
+  switch(i){
+    case 0: return {ok:true, why:"无门槛"};
+    case 1: { const ok=maxLvOfRar(P,0)>=3; return full({ok, why:`基础武功≥Lv3（当前最高Lv${maxLvOfRar(P,0)}）且缴 200两`, cost:200}); }
+    case 2: { const ok=maxLvOfRar(P,1)>=4 && (P.visit.taohua||0)>=1; return full({ok, why:`桃花岛机缘(需登岛)+进阶武功≥Lv4，缴 500两`, cost:500}); }
+    case 3: { const ok=maxLvOfRar(P,1)>=4; return full({ok, why:`进阶武功≥Lv4（当前Lv${maxLvOfRar(P,1)}）且缴 500两`, cost:500}); }
+    case 4: { const ok=maxLvOfRar(P,1)>=4 && P.attrs.luck>=12; return {ok, why:`进阶武功≥Lv4 且福缘≥12`, cost:0}; }
+    case 5: return {ok:!!P.flags.jianzhong, why:"需先寻得剑冢奇遇", cost:0};
+    case 6: return {ok:skillTypeLv3(P), why:"外/内/轻三类武功各≥Lv5", cost:0};
+    case 7: return {ok:lvlOf(P,"kongming")>=5, why:"空明拳≥Lv5", cost:0};
+  }
+  return {ok:false,why:"?"};
+}
+function sanTeacher(i){
+  clearLog(); sep();
+  const m=SAN_T[i], P=S.P, av=sanAvail(i);
+  log(`<span class="place">${m.nm}</span>（${LOCS[m.loc].nm}）`);
+  if(!av.ok){
+    log(`<span class="tagline">条件未足：${av.why}</span>`);
+    showActions([{label:"返回",fn:()=>onEnterLocation(S.loc)}]);
+    return;
+  }
+  log(`<span class="npctalk">${m.nm}：${m.say||""}</span>`);
+  const acts=[];
+  m.teach.forEach(sid=>{
+    if(!P.learned[sid]){
+      acts.push({label:`学「${SK[sid].name}」(${RARITY[SK[sid].rarity]}·${TYPE_NAME[SK[sid].type]})`,disabled:av.cost&&!P.flags["sanpay"+i]? P.gold<av.cost:false,fn:()=>{
+        if(av.cost&&!P.flags["sanpay"+i]){
+          if(P.gold<av.cost){ log("银两不足，先回城打工或打怪挣些盘缠吧。"); return; }
+          P.gold-=av.cost; P.flags["sanpay"+i]=true;
+        }
+        learnSkill(sid,true);
+        sanTeacher(i);
+      }});
+    }
+  });
+  if(!acts.length) log("他已无可教你的武功。");
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+function baixiaosheng(){
+  clearLog(); sep();
+  const P=S.P;
+  log(`<span class="place">悦来镇 · 茶楼</span>`);
+  log('<span class="npctalk">百晓生：江湖路有千万条。拜入名门正派，可得正统武学；做个闲云散鹤，也能博采众长——王教头、江湖老人都可指你一条明路。</span>');
+  const acts=[];
+  if(P.sect){
+    log(`<span class="system">你如今是${SEC[P.sect].nm}弟子。若想脱离门派做个散人，可在此「浪迹江湖」（代价与转投相当，旧武功保留）。</span>`);
+    acts.push({label:"浪迹江湖，脱离门派",fn:()=>{
+      const fee=Math.min(2400,300*Math.pow(2,P.transfer));
+      if(P.gold<fee){log("出师费不足。");return;}
+      P.gold-=fee; P.transfer++;
+      const lost=Math.floor(P.expPool*0.5); P.expPool-=lost;
+      P.sect=null; P.sectTier=0;
+      log(`<span class="system">你告别师门，缴出师费${fee}两、散功${lost}经验。自此无门无派，只身闯荡。</span>`);
+      renderSidebar(); baixiaosheng();
+    }});
+  }
+  acts.push({label:"返回",fn:()=>onEnterLocation(S.loc)});
+  showActions(acts);
+}
+/* ---------- 学武 ---------- */
+function learnSkill(sid, fromTeacher){
+  const P=S.P;
+  const count=Object.keys(P.learned).length;
+  if(P.learned[sid]){ log(`你已习得「${SK[sid].name}」。`); return; }
+  if(count>=MAX_LEARN){ log(`你已学满 ${MAX_LEARN} 门武功。若想再学，需先遗忘一门（返还50%经验）。`); return; }
+  P.learned[sid]={lv:1,exp:0,spent:0};
+  log(`<span class="reward">✦ 你习得了「${SK[sid].name}」（${RARITY[SK[sid].rarity]}·${TYPE_NAME[SK[sid].type]}）！</span>`);
+  log(`<span class="tagline">机制：${SK[sid].tags.map(tagTxt).join("　") || "朴实无华"}</span>`);
+  renderSidebar();
+  checkQuest();
+}
+/* ---------- 主线引导（6章，GDD §十二） ---------- */
+function questInfo(c){
+  const P=S.P;
+  const qs={
+    1:{t:"第一章 · 初入江湖",txt:"去襄阳城外寻敌练手，击败任意山贼/采花贼 3 次，体会打怪得经验、小胜得银两的双循环。",done:P.flags.k1>=3,cond:"击败 3 名低级贼寇"},
+    2:{t:"第二章 · 拜师学艺",txt:"寻访门派引路人拜师，或从散人师傅处再学一门武功，正式踏上习武之路。",done:Object.keys(P.learned).length>=4,cond:"已学武功 ≥ 4 门"},
+    3:{t:"第三章 · 江湖历练",txt:"将任一门基础武功修炼到「小有心得」(Lv3)，解锁中级师傅。",done:maxLvOfRar(P,0)>=3,cond:"任一基础武功 Lv≥3"},
+    4:{t:"第四章 · 高手之路",txt:"进阶武功至「登堂入室」(Lv4)，可往关中/大理寻访高级师傅。",done:maxLvOfRar(P,1)>=4,cond:"任一进阶武功 Lv≥4"},
+    5:{t:"第五章 · 群雄并起",txt:"高级武功至「臻入化境」(Lv6)，西域高手（欧阳锋/金轮法王/东方不败）已非你敌手。",done:maxLvOfRar(P,2)>=6,cond:"任一高级武功 Lv≥6"},
+    6:{t:"第六章 · 华山论剑",txt:"先以三类武功各一门 Lv9 登华山之巅，在「论剑·初」击败王重阳；此后多修分级，可续攀「名」与「天下」。",done:P.arenaHi>=1,cond:"夺「论剑·初」（外/内/轻各一门 Lv9 → 胜王重阳）"},
+  };
+  return qs[c]||qs[6];
+}
+function questGuide(c){
+  const q=questInfo(c||S.P.quest);
+  log(`<span class="quest">【${q.t}】</span> ${q.done? "（已完成，待续）":q.txt}`);
+}
+function showQuestLog(){
+  const P=S.P;
+  log('<span class="tagline">—— 主线六章 ——</span>');
+  for(let i=1;i<=6;i++){
+    const q=questInfo(i);
+    const done=(i<P.quest)||(i===P.quest&&q.done);
+    log(`${i===P.quest?"<span style='color:var(--red);font-weight:700;'>●</span> ":"○"} ${q.t} ${done?`<span class="system">✓ 完成</span>`:`—— ${q.cond}`}`);
+  }
+  // 论剑·多修分级进度（GDD §十一 v1.3）
+  const am=arenaMeta(P);
+  log('<span class="tagline">—— 华山论剑 · 多修分级（通关≠结束） ——</span>');
+  log(`论剑·初（外/内/轻各一门 Lv9）：${am.p0?"<span style='color:var(--g)'>✓ 达标</span>":"未达标"} ${P.arenaHi>=1?"·<span style='color:var(--red)'>已通关(解锁·名)</span>":"·未通关"}`);
+  log(`论剑·名（10门≥Lv7）：${P.arenaHi>=1?(am.p1?"<span style='color:var(--g)'>✓ 达标</span>":`${countLv(P,7)}/10`):"—"} ${P.arenaHi>=2?"·<span style='color:var(--red)'>已通关(解锁·天下)</span>":"·未通关"}`);
+  log(`论剑·天下（15门≥Lv7+≥2门派绝学Lv9）：${P.arenaHi>=2?(am.p2?"<span style='color:var(--g)'>✓ 达标</span>":`${countLv(P,7)}/15门·${diffSectJue9(P)}/2门派绝学`):"—"} ${P.arenaHi>=2?"·已通关":"·未通关"}`);
+  if(P.lunjian>0) log(`<span class="reward">✦ 华山论剑累计 ${P.lunjian} 胜。</span>`);
+}
+function checkQuest(){
+  const P=S.P;
+  const q=questInfo(P.quest);
+  if(P.quest<6 && q.done){
+    const rw=[{e:120,g:60},{e:180,g:80},{e:300,g:120},{e:400,g:160},{e:600,g:240},{e:0,g:0}][P.quest-1]||{e:0,g:0};
+    P.expPool+=rw.e; P.gold+=rw.g;
+    log(`<span class="reward">✦ 主线推进：${q.t} 达成！奖武功经验 ${rw.e}、银两 ${rw.g}。</span>`);
+    P.quest++;
+    questGuide(P.quest);
+  }
+  if(P.quest===6){
+    if(arenaUnlocked(P)&&!P.flags.warned){
+      P.flags.warned=true;
+      log('<span class="reward">✦ 三类武功已臻圆满——华山之巅，「论剑·初」之门为你而开！</span>');
+    }
+    if(P.arenaHi>=1&&!P.flags.quest6){
+      P.flags.quest6=true;
+      log('<span class="reward">✦✦ 主线终章达成：夺「论剑·初」！名震江湖——多修分级之门已启，可续攀「名」「天下」。</span>');
+    }
+  }
+}
+//#A4_END
+/* ======================= A5 挂机（GDD §9）与全局时钟 ======================= */
+function startIdle(opts){
+  const P=S.P;
+  if(stateInCombat()){ log("战斗之中无暇他顾！"); return; }
+  if(S.idle){ log("你已在忙碌之中。"); return; }
+  const nm = opts.work ? `${LOCS[opts.key].nm} · 打工` : `${DG[opts.key].txt.split("：")[0]}`;
+  S.idle={work:opts.work, key:opts.key, nm, start:Date.now(), sumE:0, sumG:0, sumS:0, tickN:0};
+  log(`<span class="system">◇ 你开始「${nm}」。可随时回来收工；离线时仍按 70% 结算（上限 8 小时）。</span>`);
+  renderSidebar();
+  const acts=[];
+  showActions([{label:"收工结算",fn:()=>stopIdle()}]);
+}
+function stopIdle(){
+  if(!S.idle){ log("你并未在忙。"); onEnterLocation(S.loc,true); return; }
+  const id=S.idle;
+  const P=S.P;
+  P.expPool+=Math.floor(id.sumE); P.gold+=Math.floor(id.sumG);
+  addStone(P,id.key,Math.floor(id.sumS));
+  log(`<span class="system">你收工歇息。「${id.nm}」累计获得：经验 ${Math.floor(id.sumE)}、银两 ${Math.floor(id.sumG)}${Math.floor(id.sumS)?`、打磨石×${Math.floor(id.sumS)}`:""}。</span>`);
+  S.idle=null; renderSidebar();
+  showActions([{label:"返回",fn:()=>onEnterLocation(S.loc)}]);
+}
+function addStone(P,key,n){
+  const st = key&&DG[key]? DG[key].stone : null;
+  if(st&&n>0){ P.polish[st]=(P.polish[st]||0)+n; }
+}
+function idleRates(id){
+  const P=S.P;
+  if(id.work){
+    const gpm=WORK_GOLD[LOCS[id.key].d]||60;
+    return {exp:gpm/20, gold:gpm, stone:null};
+  }
+  const dg=DG[id.key];
+  return dg? {exp:dg.exp, gold:dg.gold, stone:dg.stone} : {exp:0,gold:0,stone:null};
+}
+// 每分钟概率获得 1 颗该档打磨石（挂机增稠）
+const STONE_MINUTE = {low:0.22, mid:0.2, high:0.18, rare:0.14};
+function idleApply(dSec){
+  if(!S.idle) return;
+  const id=S.idle, P=S.P, r=idleRates(id);
+  const mins=dSec/60;
+  const e=r.exp*mins, g=r.gold*mins;
+  id.sumE+=e; id.sumG+=g;
+  if(r.stone){ id.stoneAcc=(id.stoneAcc||0)+STONE_MINUTE[r.stone]*mins; if(id.stoneAcc>=1){ const n=Math.floor(id.stoneAcc); id.stoneAcc-=n; id.sumS+=n; } }
+  id.tickN++;
+  if(id.tickN%3===0){
+    log(`<span class="system">「${id.nm}」进行中……已累计 经验+${Math.floor(id.sumE)} 银两+${Math.floor(id.sumG)}${Math.floor(id.sumS)?` 打磨石×${Math.floor(id.sumS)}`:""}</span>`);
+  }
+  renderSidebar();
+}
+function settleOffline(){
+  const P=S.P;
+  const now=Date.now();
+  let away=(now-(P.footTs||now))/1000;
+  P.foot=Math.min(FOOT_MAX, P.foot+away*FOOT_MAX/240); // 脚力 4 分钟回满
+  if(S.idle && away>30){
+    const capMin=Math.min(away/60, 8*60);
+    const r=idleRates(S.idle);
+    const e=r.exp*capMin*0.7, g=r.gold*capMin*0.7;
+    P.expPool+=Math.floor(e); P.gold+=Math.floor(g);
+    addStone(P,S.idle.key,Math.floor((r.stone? STONE_MINUTE[r.stone]*capMin*0.7:0)));
+    log(`<span class="reward">离线结算：「${S.idle.nm}」离线 ${Math.round(capMin)} 分钟（70%），获得 经验 ${Math.floor(e)}、银两 ${Math.floor(g)}。</span>`);
+    S.idle=null;
+  }
+  P.footTs=now;
+  if(P.hp<getStats(P).maxHp) P.hp=getStats(P).maxHp; // 归来气血复原（放置向，免惩罚）
+}
+/* ---------- 全局时钟：脚力回复 / 挂机 / 自动存档 ---------- */
+setInterval(()=>{
+  if(!S) return;
+  const P=S.P;
+  const d=(Date.now()-P.footTs)/1000;
+  P.footTs=Date.now();
+  P.foot=Math.min(FOOT_MAX, P.foot+d/18); // 脚力 18s 回复 1
+  idleApply(d);
+  P.footTs=Date.now();
+  renderSidebar();
+}, 10000);
+setInterval(()=>{ if(!S) return; saveSlot(S.slot); }, 30000); // 30 秒自动存档（GDD §四）
+//#A5_END
+/* ======================= A6 战斗引擎（GDD §5.3/§6）+ 论剑 + 指令 ======================= */
+function combatCfg(eidOrCfg, scale){
+  const base = typeof eidOrCfg==="string"? EN[eidOrCfg] : eidOrCfg;
+  const m = scale||1;
+  // GDD §13 v1.3：野怪/守关各自独立血线（小怪≈8~12s / 副本Boss 30~50s）；scale 仅用于论剑等动态战力场景
+  const tbl= (base.boss? (BAL.bossHpMul||{}):(BAL.hpMul||{}));
+  const hpMul= tbl[base.d]||2;
+  const hp=Math.round(base.hp*(0.92+Math.random()*0.16)*hpMul);
+  return {id:base.id, name:base.name, desc:base.desc, mech:base.mech||null, boss:base.boss||false,
+    hp:Math.round(hp*m), maxHp:Math.round(hp*m),
+    atk:Math.round(base.atk*m), def:Math.round(base.def*m),
+    exp:base.exp, gold:base.gold, stone:base.stone};
+}
+function startCombat(eidOrCfg){
+  const P=S.P;
+  if(P.hp<1) P.hp=1;
+  const foe=combatCfg(eidOrCfg);
+  S.combat=newCombat(foe);
+  clearLog(); sep();
+  log(`<span class="combat">⚔ 你遭遇了「${foe.name}」！</span>`);
+  if(foe.desc) log(foe.desc);
+  // GDD §7.4.1：标签 Boss 开场情报（克制提示）
+  if(foe.mech) log(`<span class="combat">【${MECH_NM[foe.mech]}·${foe.name}】${MECH_CNT[foe.mech]}</span>`);
+  log('<span class="tagline">◆ 武神式自动战斗：普攻自动，招式各依自然冷却循环，点亮即点、CD完自动施展。</span>');
+  renderCombat();
+}
+function newCombat(foe){
+  const now=Date.now();
+  return {foe, shield:0, iv:0, defend:false, foeDb:0, foeDot:null, foeSkip:0, comboP:0,
+    pDot:null,       // 玩家中毒状态 {dmg,turns}（蚀毒型真伤，护盾优先抵消）
+    pPoisonAt:0,     // 蚀毒 Boss 下一次放毒的时间戳
+    stance:null,     // 壁垒·姿态轮转 当前姿态（iron/swift/poison）
+    mechIntro:false, // 机制情报是否已播报
+    enemyN:0,        // 敌人出手次数（驱动迅捷/蚀毒节拍）
+    cd:{},           // sid -> 该招式下次可施展的时间戳
+    auto:true,       // true=技能自动施展 / false=技能手动点击
+    atkT:now+500,    // 玩家下一次出手节拍
+    enemyAt:now+1800,// 敌人下一次出手节拍
+    hudN:0};
+}
+function renderCombat(){ // 进入战斗：构建并显示实时 HUD
+  const c=S.combat; if(!c) return;
+  showActions([]);   // 战斗操作全部收进 HUD，避免底部动作条冗长
+  btBuild();
+  btUpdate();
+}
+/* ---------- 实时战斗 HUD ---------- */
+let _skBtn={};
+function btHide(){
+  $("battle-bar").classList.remove("show");
+  $("bt-skills").innerHTML="";
+  $("bt-tools").innerHTML="";
+  _skBtn={};
+}
+function btBuild(){
+  const c=S.combat, P=S.P;
+  $("battle-bar").classList.add("show");
+  $("bt-me-nm").textContent=P.name;
+  const skBox=$("bt-skills"); skBox.innerHTML=""; _skBtn={};
+  const eq=equippedSkills();
+  if(!eq.length) skBox.innerHTML='<div class="tl">尚未出招武功——普通攻击自动进行。</div>';
+  eq.forEach(id=>{
+    const skd=SK[id];
+    const b=document.createElement("button");
+    b.className="sk-btn t"+skd.type;
+    b.innerHTML=`<b>${skd.name}</b><i class="mp">耗内${skd.mp}</i>`;
+    const mtxt=skd.tags.filter(t=>["m","crit","db","ig","st","dot","ex","cb","ls","dm","df","rf","sh","iv"].includes(t.k)).map(tagTxt).join(" · ");
+    b.title=`${mtxt?mtxt+"　":"[普通]　"}点击立即施展「${skd.name}」`;
+    b.onclick=()=>castSkill(id);
+    skBox.appendChild(b);
+    _skBtn[id]=b;
+  });
+  const tb=$("bt-tools"); tb.innerHTML="";
+  const mk=(label,fn)=>{ const x=document.createElement("button"); x.textContent=label; x.onclick=fn; tb.appendChild(x); return x; };
+  c.autoBtn=mk(c.auto?"技能·自动":"技能·手动",()=>toggleAuto());
+  mk("防御",()=>playerDefend());
+  Object.keys(ITEMS).forEach(k=>{ if((P.inv[k]||0)>0) mk(`服${ITEMS[k].name}`,()=>combatItem(k)); });
+  mk("逃跑",()=>playerFlee());
+}
+function toggleAuto(){
+  const c=S.combat; if(!c) return;
+  c.auto=!c.auto;
+  log(`<span class="system">${c.auto?"武学运转自如：招式将依节奏自动施展，亦可随时点技能抢攻。":"已改手动施招：普攻照旧自动，技能点亮时点击即发。"}</span>`);
+  btUpdate();
+}
+function btUpdate(){
+  if(!S||!S.combat){ btHide(); return; }
+  const c=S.combat, foe=c.foe, P=S.P, st=getStats(P), now=Date.now();
+  $("bt-foe-nm").textContent=foe.name;
+  $("bt-foe-fill").style.width=clamp(foe.hp/foe.maxHp*100,0,100)+"%";
+  $("bt-foe-hp").innerHTML=`气血 <b>${Math.max(0,Math.round(foe.hp))}</b>/${foe.maxHp}`;
+  const fs=[];
+  if(foe.mech){ // 标签 Boss：常驻机制标签（GDD §7.4.1）
+    const sn=c.stance==="iron"?"壁垒·铁壁":c.stance==="swift"?"壁垒·迅捷":c.stance==="poison"?"壁垒·蚀毒":null;
+    fs.push(foe.mech==="stance"? (sn||"壁垒·姿态轮转") : MECH_NM[foe.mech]);
+  }
+  if(dbLive()) fs.push(`破防-${Math.round(c.foeDb.pct*100)}%`);
+  if(c.foeDot) fs.push(`中毒${c.foeDot.dmg}×${c.foeDot.turns}`);
+  if(c.foeSkip>0) fs.push("行动不能");
+  $("bt-foe-st").textContent=fs.join("·")||"";
+  $("bt-me-fill").style.width=clamp(P.hp/st.maxHp*100,0,100)+"%";
+  $("bt-me-fill-mp").style.width=clamp(P.mp/st.maxMp*100,0,100)+"%";
+  $("bt-me-hp").innerHTML=`气血 <b>${Math.round(P.hp)}</b>/${st.maxHp}`;
+  const ms=[];
+  if(c.pDot) ms.push(`中毒${c.pDot.dmg}×${c.pDot.turns}`);
+  if(c.shield>0) ms.push(`护盾${Math.round(c.shield)}`);
+  if(c.iv>0) ms.push("无敌");
+  if(c.defend) ms.push("戒备");
+  $("bt-me-st").textContent=ms.join("·")||"";
+  Object.keys(_skBtn).forEach(id=>{
+    const b=_skBtn[id], sk=SK[id];
+    const onCd=(c.cd[id]||0)>now, noMp=P.mp<sk.mp;
+    b.disabled=onCd||noMp;
+    b.classList.toggle("on",!onCd&&!noMp);
+    if(!b._cdEl){ const o=document.createElement("i"); o.className="cd"; b.appendChild(o); b._cdEl=o; }
+    if(onCd){ b._cdEl.style.display="flex"; b._cdEl.textContent=(Math.ceil((c.cd[id]-now)/100)/10).toFixed(1); }
+    else b._cdEl.style.display="none";
+  });
+  if(c.autoBtn) c.autoBtn.textContent=c.auto?"技能·自动":"技能·手动";
+  c.hudN++;
+  if(c.hudN%4===0) renderSidebar(); // 每秒同步一次侧栏（气血/出招等）
+}
+function skillCd(sk){
+  const cds=[[2400,3200,4200,5400],   // 外功：基础/进阶/高级/绝学
+             [9500,11000,12500,14500],// 内功（护体/运气类，长CD）
+             [8000,9500,11000,13000]];// 轻功（身法/无敌类）
+  return cds[sk.type]? (cds[sk.type][sk.rarity]||3600):3600;
+}
+function skillCastTime(sk){ return sk.type===0? 300:400; }
+function playerGap(){ const spd=getStats(S.P).spdEff; return clamp(1500-spd*20,950,1500); }
+function enemyGap(foe){ return clamp(2350-foe.atk*1.6,1300,2450); }
+function dbLive(){
+  if(!S.combat||!S.combat.foeDb) return false;
+  if(Date.now()>S.combat.foeDb.exp){ S.combat.foeDb=0; return false; }
+  return true;
+}
+/* 战斗节拍：每 250ms 心跳一次，驱动“自然冷却”式自动战斗 */
+setInterval(()=>{
+  if(!S) return;
+  const c=S.combat;
+  if(!c){ btHide(); return; }
+  const now=Date.now();
+  if(c.foe.hp<=0) return winCombat();
+  if(S.P.hp<=0) return loseCombat();
+  if(c.enemyAt<=now) foeTurn();   // 敌人独立攻击节拍
+  if(!S.combat) return;
+  if(c.atkT<=now) playerCycle();  // 玩家自动节拍（普攻 / 自动施招）
+  btUpdate();
+},250);
+function equippedSkills(){
+  const P=S.P, list=[];
+  P.equipped.outer.forEach(id=>list.push(id));
+  if(P.equipped.inner) list.push(P.equipped.inner);
+  if(P.equipped.light) list.push(P.equipped.light);
+  return list;
+}
+const OFF_CODES=["m","crit","ig","db","st","dot","ex","cb","ls","dm","df"];
+function hasOff(sk){ return sk.tags.some(t=>OFF_CODES.includes(t.k)); }
+function castSkill(sid){
+  const P=S.P, c=S.combat, sk=SK[sid], e=P.learned[sid];
+  if(!c) return;
+  if(!e){ log("你尚未习得此功。"); return; }
+  if(P.mp<sk.mp){ log("内力不足！"); return; }
+  const _now=Date.now();
+  if((c.cd[sid]||0)>_now){ log(`「${sk.name}」尚在运气调息，片刻后再试。`); return; }
+  P.mp-=sk.mp;
+  c.cd[sid]=_now+skillCd(sk);   // 施招即进入自然冷却
+  const isDual=sk.tags.some(t=>t.k==="df");
+  const buffOnly=!hasOff(sk);
+  if(buffOnly){
+    // 内/轻主动技：护盾 / 无敌 / 运气
+    sk.tags.forEach(t=>{
+      if(t.k==="sh"){ const v=Math.round(t.a[0]*(1+e.lv*0.15)); c.shield+=v; log(`<span class="heal">你运起「${sk.name}」，护体罡气+${v}！</span>`); }
+      if(t.k==="iv"){ c.iv=Math.max(c.iv,t.a[0]); log(`<span class="heal">「${sk.name}」施展开来，${t.a[0]} 回合内你身影飘忽，不可捉摸！</span>`); }
+    });
+    if(!sk.tags.some(t=>t.k==="sh"||t.k==="iv")){
+      const rec=Math.round(getStats(P).maxMp*0.12)+3;
+      P.mp=Math.min(getStats(P).maxMp,P.mp+rec);
+      log(`你以内力运转「${sk.name}」，气机流转，回复内力 ${rec}。`);
+    }
+    return afterCast(sk);
+  }
+  let total=0;
+  // 左右互搏：本回合同时施展另一门（非互搏）外功，双手双招
+  if(isDual){
+    const other=P.equipped.outer.find(x=>x!==sid && !SK[x].tags.some(t=>t.k==="df"));
+    if(other){
+      if(P.mp>=SK[other].mp){
+        P.mp-=SK[other].mp;
+        log(`<span class="combat">「${sk.name}」！一心二用，一手施「${SK[sid].name}」，一手施「${SK[other].name}」！</span>`);
+        total+=strike(other);
+      }else log("内力不足，右手招式未能同步施展。");
+    }else log(`「${sk.name}」！但左右同招并不可行，只得单臂运功。`);
+  }
+  total+=strike(sid);
+  if(total>0) log(`<span class="combat">合计造成伤害 <span class="dmg">${total}</span>。</span>`);
+  afterCast(sk);
+}
+function skillAtk(sid){
+  const P=S.P, sk=SK[sid], e=P.learned[sid], st=getStats(P);
+  const critT=sk.tags.find(t=>t.k==="crit");
+  const segN=(sk.tags.find(t=>t.k==="m")||{a:[1]}).a[0];
+  const ig=sk.tags.some(t=>t.k==="ig");
+  const baseHit=0.9+Math.min(0.2,(st.spdEff-10)*0.004);
+  return {sk,e,st,critT,segN,ig,baseHit};
+}
+/* 演出层：每门武功依其“最独特机制”给出招式宣告，使各流派手感可区分（武神传说原型方向）。
+   纯文案不影响数值；多标签武功按优先级择一呈现。 */
+function strikeFlavor(sk, foe, exOn){
+  const k=sk.tags.map(t=>t.k);
+  const mN=()=>{ const t=sk.tags.find(t=>t.k==="m"); return t?t.a[0]:1; };
+  const N=mN(), nm=sk.name;
+  const R=(...a)=>a[Math.floor(Math.random()*a.length)];
+  if(k.includes("df")) return "";  // 左右互搏的主宣告已由 castSkill 输出，此处免重复
+  if(exOn) return R(
+    `「${nm}」——察觉${foe.name}力衰气竭，你长驱直入，杀招直取要害！`,
+    `「${nm}」——看准旧力已尽的破绽，绝不留情，一击追魂！`);
+  if(k.includes("st")) return R(
+    `「${nm}」——虚虚实实之间，暗藏点穴截脉的杀机！`,
+    `「${nm}」——招走轻灵，直逼对方周身要穴！`);
+  if(k.includes("dot")) return R(
+    `「${nm}」——一股阴寒暗劲透体而入，毒力悄然暗伏！`,
+    `「${nm}」——劲中带毒，蚀骨无形，${foe.name}却浑然未觉！`);
+  if(k.includes("db")) return R(
+    `「${nm}」——以巧破力，招招指向守御破绽！`,
+    `「${nm}」——专攻敌之必救，铁壁般的守势也露出一线缝隙！`);
+  if(N>=8) return R(
+    `「${nm}」——${N} 道攻势连绵而至，如江河奔涌，一气呵成！`,
+    `「${nm}」——双手翻飞，${N} 记杀招竟似同一式，铺天盖地！`);
+  if(k.includes("ig")) return R(
+    `「${nm}」——势如破竹，避无可避！`,
+    `「${nm}」——后发先至，任你身法如电也闪避不及！`);
+  if(N>=5) return R(
+    `「${nm}」——一式化${N}影，劲力层层叠叠，渐强渐猛！`);
+  if(k.includes("crit")) return R(
+    `「${nm}」——劲蕴杀机，蓄势待发，直逼要害！`,
+    `「${nm}」——出手极尽诡变，专候对手稍纵即逝的破绽！`);
+  if(k.includes("cb")) return R(
+    `「${nm}」——一招未尽，后招已生，如影随形！`);
+  if(N>=3) return R(
+    `「${nm}」——攻势连环，${N} 招接连不断，密不透风！`);
+  if(N>=2) return R(
+    `「${nm}」——双式并出，虚实相生，防不胜防！`);
+  return R(
+    `「${nm}」——一式展开，内力贯注，攻向${foe.name}！`);
+}
+function strike(sid){
+  const P=S.P, c=S.combat, foe=c.foe;
+  if(!c||foe.hp<=0) return 0;
+  const a=skillAtk(sid);
+  const sk=a.sk, e=a.e;
+  const lvp=LVL_POW[e.lv-1], coef=TIER_COEF[sk.rarity], eM=lvMul(e,0.05);
+  const exec=sk.tags.find(t=>t.k==="ex");
+  const exOn= !!exec && foe.hp/foe.maxHp < exec.a[0];  // 斩杀线判定
+  const exMul= exOn? 1+exec.a[1]*eM : 1;
+  let total=0, critN=0, hitN=0, healN=0, mpN=0;
+  // —— 招式宣告（演出层） ——
+  const fl=strikeFlavor(sk, foe, exOn);
+  if(fl) log(`<span class="combat">${fl}</span>`);
+  // 招式基础威力（GDD §13 v1.3：pAtk 压缩爆发拉长战斗；§7.4.1：铁壁需破防否则减伤）
+  const defAfter=foe.def*(dbLive()? (1-c.foeDb.pct):1);
+  const mode=foe.mech==="stance"? (c.stance||"iron") : foe.mech;
+  let raw=a.st.atk*coef*lvp*exMul;
+  if((mode==="iron"||mode==="iron2")&&!dbLive()) raw*= mode==="iron2"?0.35:0.5;
+  const segTot=Math.max(0,Math.round(raw*BAL.pAtk - defAfter));
+  const seg=[];
+  for(let i=0;i<a.segN;i++){
+    if(a.segN>1) seg[i]=Math.floor(segTot/a.segN)+(i<segTot%a.segN?1:0);
+    else seg[i]=segTot;
+    // 独立命中判定
+    if(!a.ig && Math.random()>a.baseHit){ continue; }
+    let dmg=Math.max(1,seg[i]);
+    if(a.critT && Math.random()<Math.min(0.85,a.critT.a[0]*eM)){ dmg=Math.round(dmg*a.critT.a[1]); critN++; }
+    if(dmg<=0) continue;
+    hitN++;
+    foe.hp-=dmg; total+=dmg;
+    // 吸血 / 吸内（随层数成长）
+    const ls=sk.tags.find(t=>t.k==="ls");
+    if(ls){ const h=Math.round(dmg*Math.min(0.5,ls.a[0]*eM)); P.hp=Math.min(getStats(P).maxHp,P.hp+h); healN+=h; }
+    const dm=sk.tags.find(t=>t.k==="dm");
+    if(dm){ const r=Math.round(dmg*Math.min(0.5,dm.a[0]*eM)); P.mp=Math.min(getStats(P).maxMp,P.mp+r); mpN+=r; }
+  }
+  if(foe.hp<=0) return total;
+  // —— 附加结算 + 反馈统一收口（同一次出招的状态只汇总为一行，避免刷屏） ——
+  const fx=[];
+  sk.tags.forEach(t=>{
+    if(t.k==="db"&&hitN>0){ c.foeDb={pct:Math.min(0.75,t.a[0]*eM), exp:Date.now()+t.a[1]*1600}; fx.push(`<span class="combat">破！${foe.name}防御受创，${t.a[1]} 招内防御大减。</span>`); }
+    if(t.k==="st"&&hitN>0&&Math.random()<Math.min(0.8,t.a[0]*eM)){ c.foeSkip=Math.max(c.foeSkip,1); fx.push(`<span class="combat">点穴！${foe.name}被封住要穴，下一回合动弹不得！</span>`); }
+    if(t.k==="dot"&&hitN>0){ const dt={dmg:Math.max(1,Math.round(t.a[0]*lvMul(e,0.06))),turns:t.a[1]}; c.foeDot=dt; fx.push(`<span class="combat">阴毒透体，${foe.name}身中奇毒，${dt.turns} 回合内每回合蚀去 ${dt.dmg}！</span>`); }
+  });
+  if(hitN===0) fx.push(`<span class="combat">「${sk.name}」去势虽疾，却被${foe.name}侧身避开，一招落空。</span>`);
+  else if(critN===1) fx.push(`<span class="combat">正中要害，会心一击！</span>`);
+  else if(critN>1) fx.push(`<span class="combat">会心 ${critN} 连击，招招洞穿守御！</span>`);
+  if(healN>0) fx.push(`<span class="heal">伤敌而自愈，回复气血 ${healN}。</span>`);
+  if(mpN>0) fx.push(`<span class="heal">气海翻涌，反夺内力 ${mpN} 为己用。</span>`);
+  // 连击追打
+  const cb=sk.tags.find(t=>t.k==="cb");
+  if(cb&&Math.random()<Math.min(0.8,cb.a[0]*eM)){
+    const p2=Math.max(1,Math.round(a.st.atk*1.0*LVL_POW[e.lv-1]*BAL.pAtk-foe.def*0.85));
+    foe.hp-=p2; total+=p2;
+    fx.push(`<span class="combat">后招接踵而至，追打 ${p2} 点伤害！</span>`);
+  }
+  if(fx.length) log(fx.join(""));
+  return total;
+}
+function playerNormal(){
+  const c=S.combat, foe=c.foe, P=S.P, st=getStats(P);
+  if(!c||foe.hp<=0) return;
+  const dmg=Math.max(1,Math.round(st.atk*BAL.pPunch-foe.def*0.85)+rand(0,5));
+  foe.hp-=dmg;
+  log(`你挥兵刃攻去，造成 <span class="dmg">${dmg}</span> 点伤害。`);
+  if(foe.hp<=0) return winCombat();
+  btUpdate();
+}
+function playerDefend(){
+  const c=S.combat; if(!c) return;
+  c.defend=true;
+  log("你凝神戒备，架势严密。");
+  c.atkT=Date.now()+1000;
+  btUpdate();
+}
+function playerFlee(){
+  const P=S.P, c=S.combat, foe=c.foe;
+  if(!c) return;
+  const chance=clamp(0.45+P.attrs.agi*0.02-foe.atk*0.004,0.15,0.9);
+  if(Math.random()<chance){
+    log("你瞅准空当，施展身法遁走！");
+    S.combat=null; btHide();
+    onEnterLocation(S.loc);
+  }else{
+    log("逃跑失败！对方攻势更急。");
+    c.enemyAt=Date.now()+450;
+    btUpdate();
+  }
+}
+function combatItem(k){
+  const P=S.P, c=S.combat, it=ITEMS[k];
+  if(!c) return;
+  if(!(P.inv[k]>0)) return;
+  P.inv[k]--; P.hp=Math.min(getStats(P).maxHp,P.hp+it.heal); P.mp=Math.min(getStats(P).maxMp,P.mp+it.mp);
+  log(`你服下${it.name}，${it.heal?`生命+${it.heal}`:""}${it.mp?`内力+${it.mp}`:""}。`);
+  c.atkT=Date.now()+700;
+  btUpdate();
+}
+/* 施招收尾：登记冷却后的下一次出手节拍（敌人独立节拍，不随玩家行动反击） */
+function afterCast(sk){
+  const c=S.combat;
+  if(!c) return;
+  if(c.foe.hp<=0) return winCombat();
+  c.atkT=Date.now()+skillCastTime(sk);
+  btUpdate();
+}
+/* 玩家自动节拍：回气 → 自动出招或普攻 */
+function playerCycle(){
+  const P=S.P, c=S.combat, now=Date.now();
+  if(!c) return;
+  regenMp(P);
+  const sid=autoPick();
+  if(c.auto&&sid){ castSkill(sid); return; }
+  c.atkT=now+playerGap();
+  playerNormal();
+}
+function regenMp(P){
+  const st=getStats(P);
+  if(P.mp>=st.maxMp) return;
+  let g=0;
+  if(P.equipped.inner){ const sk=SK[P.equipped.inner], e=P.learned[P.equipped.inner]; sk.tags.forEach(t=>{ if(t.k==="pr") g+=(t.a[0]||0)*lvMul(e,0.08); }); }
+  if(g>0) P.mp=Math.min(st.maxMp,P.mp+g);
+}
+/* 自动选招：进攻/控制优先；护体/身法/运气类仅在有意义时使用 */
+function autoPick(){
+  const P=S.P, c=S.combat, now=Date.now();
+  if(!c) return null;
+  const st=getStats(P);
+  const list=equippedSkills();
+  for(let i=0;i<list.length;i++){
+    const id=list[i], sk=SK[id], e=P.learned[id];
+    if(!e||(c.cd[id]||0)>now||P.mp<sk.mp) continue;
+    if(hasOff(sk)) return id;
+  }
+  for(let i=0;i<list.length;i++){
+    const id=list[i], sk=SK[id], e=P.learned[id];
+    if(!e||(c.cd[id]||0)>now||P.mp<sk.mp) continue;
+    const sh=sk.tags.some(t=>t.k==="sh"), iv=sk.tags.some(t=>t.k==="iv");
+    if(sh&&c.shield>0) continue;
+    if(iv&&c.iv>0) continue;
+    if(!sh&&!iv&&P.mp>st.maxMp*0.6) continue; // 纯运气类：内力尚足则留待需时
+    return id;
+  }
+  return null;
+}
+/* 敌人回合：由敌人自己的攻击节拍驱动（foeSkip/毒/护盾/无敌均作用于敌人出手时）
+   GDD §7.4.1 标签 Boss：iron 铁壁(玩家侧减伤) / poison 蚀毒 / swift 迅捷 / stance 姿态轮转 */
+function foeMechMode(){ // 当前对玩家生效的敌人机制（姿态轮转实时取姿态）
+  const c=S.combat; if(!c) return null;
+  return c.foe.mech==="stance"? (c.stance||"iron") : c.foe.mech;
+}
+function foeTurn(noReflectText){
+  const c=S.combat, foe=c.foe, P=S.P;
+  if(!c) return;
+  c.enemyN++;
+  // —— 壁垒·姿态轮转：随气血三段轮换 ——
+  if(foe.mech==="stance"){
+    const want=foe.hp/foe.maxHp>0.66?"iron":foe.hp/foe.maxHp>0.33?"swift":"poison";
+    const nm={iron:"铁壁",swift:"迅捷",poison:"蚀毒"}[want];
+    if(c.stance!==want){ c.stance=want; log(`<span class="combat">⚠ ${foe.name} 气息轮转，转入「壁垒·${nm}」姿态！</span>`); }
+  }else if(foe.mech&&!c.mechIntro){ c.mechIntro=true; }
+  // —— §6.2 结算第 3 步·Boss 机制修正：玩家中毒（真伤无视闪避，护盾优先抵消） ——
+  if(c.pDot){
+    let d=c.pDot.dmg, abs=0;
+    if(c.shield>0){ abs=Math.min(c.shield,d); c.shield-=abs; d-=abs; }
+    if(d>0){ P.hp-=d; }
+    log(`<span class="combat">毒气蚀体！你受 <span class="dmg">${Math.max(0,d)}</span> 点毒性伤害${abs>0?`（护盾化解 ${abs}）`:""}。</span>`);
+    c.pDot.turns--;
+    if(c.pDot.turns<=0) c.pDot=null;
+    if(P.hp<=0) return loseCombat();
+  }
+  if(c.foeSkip>0){
+    c.foeSkip--;
+    log(`<span class="combat">${foe.name}被点中要穴，动弹不得！</span>`);
+    return foeSettle();
+  }
+  if(c.foeDot){
+    foe.hp-=c.foeDot.dmg; c.foeDot.turns--;
+    log(`<span class="combat">毒性发作！${foe.name} 受 ${c.foeDot.dmg} 点毒伤。</span>`);
+    if(c.foeDot.turns<=0) c.foeDot=null;
+    if(foe.hp<=0) return winCombat();
+  }
+  // 蚀毒 Boss：每隔 3 次出手扬毒一次
+  if(foe.mech==="poison"&&!c.pDot&&c.enemyN%3===1){
+    c.pDot={dmg:Math.max(4,Math.round(foe.atk*0.9)),turns:2};
+    log(`<span class="combat">☠ ${foe.name} 扬手撒出一蓬毒雾，你身中奇毒！</span>`);
+  }
+  // 迅捷 Boss（含王重阳迅捷姿态）：暴击连发
+  const swift = foe.mech==="swift"||(foe.mech==="stance"&&c.stance==="swift");
+  if(swift) log(`<span class="combat">${foe.name} 身形如电，攻势连绵！</span>`);
+  foeStrikeOnce(swift? {crit:0.34,dCrit:1.9} : {crit:0.12,dCrit:1.6});
+  if(swift && foe.hp>0 && P.hp>0 && Math.random()<0.45){
+    log(`<span class="combat">${foe.name} 得势不饶人，第二招接踵而至！</span>`);
+    foeStrikeOnce({crit:0.22,dCrit:1.6});
+  }
+  c.defend=false;
+  if(P.hp<=0) return loseCombat();
+  if(foe.hp<=0) return winCombat();
+  foeSettle();
+}
+function foeStrikeOnce(opts){
+  const c=S.combat, foe=c.foe, P=S.P, st=getStats(P);
+  const o=opts||{};
+  let dmg=foe.atk*BAL.eAtk+rand(0,5)-Math.round(st.def*(c.defend?2:1));
+  dmg=Math.max(1,dmg);
+  dmg=Math.max(Math.round(foe.atk*BAL.minE), dmg); // 硬磨安全阀：后期护甲再高，敌每击也保持 atk×minE 可感伤害
+  let crit=false;
+  if(Math.random()<(o.crit||0.12)){ dmg=Math.round(dmg*(o.dCrit||1.6)); crit=true; }
+  const rfPct=reflectTotal(P);
+  if(c.iv>0){
+    c.iv--;
+    log(`<span class="heal">${foe.name} 猛攻而至，却只掠过你的残影！</span>`);
+  }else if(Math.random()<st.dodge){  // 身法闪避（GDD §6.3 命中/闪避：轻功闪避可躲迅捷暴击连发）
+    log(`<span class="heal">${foe.name} 来势汹汹，你身形一晃，堪堪避过这一击！</span>`);
+  }else if(c.shield>0){
+    const absorbed=Math.min(c.shield,dmg);
+    c.shield-=absorbed; dmg-=absorbed;
+    log(`<span class="heal">护体罡气挡下 ${absorbed} 点伤害！${c.shield>0?`（余盾 ${Math.round(c.shield)}）`:""}</span>`);
+    if(dmg>0){ P.hp-=dmg; log(`${foe.name} 攻来，造成 <span class="dmg">${dmg}</span> 点伤害。`); }
+    else if(rfPct>0){ const rb=Math.round(absorbed*rfPct); foe.hp-=rb; log(`<span class="combat">反弹！${foe.name} 被震伤 ${rb} 点。</span>`); }
+  }else{
+    P.hp-=dmg;
+    log(crit? `<span class="combat">${foe.name} 使出杀招，重创你 <span class="dmg">${dmg}</span> 点！</span>`
+              : `${foe.name} 攻来，造成 <span class="dmg">${dmg}</span> 点伤害。`);
+    if(rfPct>0){ const rb=Math.round(dmg*rfPct); foe.hp-=rb; log(`<span class="combat">反弹！${foe.name} 反受 ${rb} 点震伤。</span>`); if(foe.hp<=0) return; }
+  }
+}
+function reflectTotal(P){
+  const list=equippedSkills(); let r=0;
+  list.forEach(id=>{ const sk=SK[id], e=P.learned[id]; sk.tags.forEach(t=>{ if(t.k==="rf") r+=(t.a[0]||0)*lvMul(e,0.05); }); });
+  return Math.min(0.85,r);
+}
+function foeSettle(){
+  const c=S.combat; if(!c) return;
+  c.enemyAt=Date.now()+enemyGap(c.foe);
+  btUpdate();
+}
+function winCombat(){
+  const c=S.combat, foe=c.foe, P=S.P;
+  const foeId=foe.id;
+  S.combat=null;
+  sep();
+  log(`<span class="reward">✧ 你战胜了「${foe.name}」！</span>`);
+  const expGain=foe.exp, goldGain=foe.gold;
+  P.expPool+=expGain; P.gold+=goldGain;
+  log(`<span class="reward">获得武功经验 ${expGain}、银两 ${goldGain}。</span>`);
+  // 打磨石掉落
+  const stoneDrop=Math.random();
+  if(stoneDrop<0.5||foe.stone==="rare"){
+    P.polish[foe.stone]=(P.polish[foe.stone]||0)+1;
+    log(`<span class="reward">拾得 ${STONE_NM[foe.stone]} ×1。</span>`);
+  }
+  // 低概率装备掉落
+  if(Math.random()<0.12){
+    const slot=pick(["weapon","armor","trinket","belt","boots"]);
+    const lvl=clamp((foe.maxHp>500?7:foe.maxHp>300?5:foe.maxHp>150?3:1)+(Math.random()<0.3?1:0),1,9);
+    const color=foe.maxHp>600?rand(2,3): foe.maxHp>300?rand(1,2): rand(0,1);
+    if(!P.bag) P.bag=[];
+    P.bag.push(makeGear(slot,lvl,color));
+    log(`<span class="reward">战利品：${gearName(P.bag[P.bag.length-1])}！</span>`);
+  }
+  // 计数
+  if(["shanzei","caihua"].includes(foeId)) P.flags.k1=(P.flags.k1||0)+1;
+  // 副本守关者 → 解锁挂机
+  Object.keys(DG).forEach(k=>{ if(DG[k].boss===foeId){ P.dgDone[k]=true; log(`<span class="reward">✦ 你荡平了「${DG[k].txt.split("：")[0]}」！此后可在此处挂机修炼。</span>`); } });
+  // 论剑（§十一 多修分级制 v1.3：逐级解锁、通关推进）
+  if(foe.arena){
+    P.lunjian++;
+    log(`<span class="reward">✦ 华山论剑第 ${P.lunjian} 胜！天下英雄，舍你其谁？</span>`);
+    if(foe.arenaTier===0){
+      if(P.arenaHi<1){ P.arenaHi=1;
+        log(`<span class="reward">✦✦ 「论剑·初」通关！你夺得「初」之席位——解锁「论剑·名」：待 10 门武功 ≥Lv7，各派绝学高手将轮番候教。</span>`);
+      }
+      if(P.lunjian===1) log(`<span class="reward">✦✦✦ 名震江湖！从此，「${P.name}」之名，响彻武林。</span>`);
+    }else if(foe.arenaTier===1){
+      P.arenaT2=(P.arenaT2||0)+1;
+      if(P.arenaT2%ARENA_T2.length===0){
+        if(P.arenaHi<2){ P.arenaHi=2;
+          log(`<span class="reward">✦✦✦ 「论剑·名」连胜一轮、力克绝学高手！你夺得「名」之席位——「论剑·天下」解锁：15 门武功 Lv7+ 且双门派绝学 Lv9 者，可挑战王重阳「姿态轮转」守擂。</span>`);
+        }
+      }else{
+        const nx=ARENA_T2[P.arenaT2%ARENA_T2.length];
+        log(`<span class="system">高手轮番、愈战愈强。下一战：「${nx.nm}」。</span>`);
+      }
+    }else if(foe.arenaTier===2){
+      P.arenaT3=(P.arenaT3||0)+1;
+      if(foe.mech==="stance"){ log(`<span class="reward">✦✦✦ 王重阳「壁垒·姿态轮转」亦被你看破！天下第一，名副其实。</span>`);
+        if(!P.arenaWZ){ P.arenaWZ=true; log(`<span class="reward">✦✦✦✦ 你夺得武林唯一称号「武林至尊」！自此武林共主，唯你一人。</span>`); }
+      }
+      else log(`<span class="system">全明星池高手轮番应战，越战越勇。</span>`);
+    }
+  }
+  renderSidebar();
+  checkQuest();
+  const acts=[{label:"继续",fn:()=>onEnterLocation(S.loc,true)}];
+  if(foe.arena) log('<span class="system">剑息方定。可返回论剑台查看更高段位，或休整后再战。</span>');
+  showActions(acts);
+}
+function loseCombat(){
+  const P=S.P;
+  S.combat=null;
+  sep();
+  log(`<span class="combat">你眼前一黑，倒了下去……</span>`);
+  P.gold=Math.floor(P.gold*0.9);
+  const healed=Math.floor(getStats(P).maxHp*0.4);
+  P.hp=Math.max(1,healed); P.mp=Math.floor(getStats(P).maxMp*0.5);
+  log(`<span class="system">好心人把你抬回${LOCS[S.loc].nm}救治。银两损失一成，气血恢复四成。大侠且先歇息，从长计议。</span>`);
+  renderSidebar();
+  showActions([{label:"继续",fn:()=>onEnterLocation(S.loc,true)}]);
+}
+/* ---------- 华山论剑 · 多修分级制（GDD §十一 v1.3 整体重写） ----------
+  论剑·初：外/内/轻各一门 Lv9 → 王重阳（入门档）
+  论剑·名：通初 + 共 10 门武功 ≥Lv7 → 各派绝学高手轮番（乔峰→张三丰→扫地僧）
+  论剑·天下：通名 + 共 15 门 ≥Lv7 + ≥2 门不同门派绝学 Lv9 → 全明星池 & 王重阳「姿态轮转」守擂
+  逐级解锁、不可跳级；散人平权（多习各家武功即平权）；通关≠结束、可反复挑战；无尽排位（二期）。
+  ※ 判定依据见评审 §2.1：15 门与转门派/散人补第二套是「必要」而非「可能」。*/
+  // 对手攻防固定为五绝级（atk52/def22）：难度由血线 + 机制标签承载；scale 仅用于奖励成长
+const ARENA_T2=[
+  {nm:"乔峰",desc:"丐帮帮主乔峰，降龙十八掌刚猛无俦，臂如铁壁。",scale:1.3,hp:5600,mech:"iron"},
+  {nm:"张三丰",desc:"武当祖师张三丰，太极圆转、以静制动，出手如电。",scale:1.7,hp:6500,mech:"swift"},
+  {nm:"扫地僧",desc:"藏经阁无名老僧，周身佛光护体、毒功通玄。",scale:2.15,hp:6600,mech:"poison"}
+];
+const ARENA_T3=[
+  {nm:"东方不败",desc:"日月神教教主，葵花宝典身法如鬼似魅、招招夺命。",scale:2.4,hp:9000,mech:"swift"},
+  {nm:"扫地僧·圆满",desc:"老僧双掌合十，金刚不坏、似无破绽。",scale:2.65,hp:6000,mech:"iron2"},
+  {nm:"独孤求败·剑意",desc:"剑魔残念凝形，无招胜有招、剑出如电。",scale:2.95,hp:9500,mech:"swift"},
+  {nm:"王重阳·姿态轮转",desc:"全真祖师展露先天功全貌——铁壁/迅捷/蚀毒三态随气血轮转，天下无人能破其壁垒！",scale:3.2,hp:8000,mech:"stance"}
+];
+function sectJue(){ // 门派绝学归属（由 SEC 传授表自动推导；散人通用绝学不计门派绝学）
+  if(sectJue._c) return sectJue._c;
+  const m={};
+  Object.keys(SEC).forEach(sid=>{ (SEC[sid].t||[]).forEach(tt=>{ (tt.teach||[]).forEach(gid=>{
+    const s=SK[gid]; if(s&&s.rarity===3){ (m[gid]=m[gid]||[]).push(sid); }
+  }); }); });
+  sectJue._c=m; return m;
+}
+function countLv(P,lv){ let n=0; Object.keys(P.learned||{}).forEach(id=>{ if(P.learned[id].lv>=lv) n++; }); return n; }
+function diffSectJue9(P){ // 达 Lv9 的门派绝学共覆盖几家不同门派
+  const sj=sectJue(), se=new Set();
+  Object.keys(P.learned||{}).forEach(id=>{ const e=P.learned[id]; if(e.lv>=9&&sj[id]) sj[id].forEach(s=>se.add(s)); });
+  return se.size;
+}
+function arenaMeta(P){ return {
+  p0: anyTypeLv(P,0)>=9 && anyTypeLv(P,1)>=9 && anyTypeLv(P,2)>=9, // 外/内/轻各一门 Lv9
+  p1: countLv(P,7)>=10,                                           // 共 10 门 ≥Lv7
+  p2: countLv(P,7)>=15 && diffSectJue9(P)>=2                      // 15 门 ≥Lv7 + 两门派绝学 Lv9
+}; }
+function arenaUnlocked(P){ return arenaMeta(P).p0; } // 兼容旧主线判断
+function arenaCheck(tier,P){
+  const m=arenaMeta(P);
+  if(tier===0) return m.p0? {ok:true} : {ok:false,msg:"需外/内/轻各一门武功 Lv9（返璞归真）方可踏入「论剑·初」。"};
+  if(tier===1){
+    if(P.arenaHi<1) return {ok:false,msg:"须先击败「论剑·初」王重阳，方可挑战「论剑·名」——逐级解锁、不可跳级。"};
+    if(!m.p1) return {ok:false,msg:`「论剑·名」需 10 门武功 ≥Lv7（当前 ${countLv(P,7)}/10）——转门派/散人补练第二套武功，正是多修之必要。`};
+    return {ok:true};
+  }
+  if(P.arenaHi<2) return {ok:false,msg:"须在「论剑·名」连克乔峰、张三丰、扫地僧一轮（三胜）后，方可挑战「论剑·天下」。不可跳级。"};
+  if(!m.p2) return {ok:false,msg:`「论剑·天下」需 15 门武功 ≥Lv7（当前 ${countLv(P,7)}/15）且至少 2 门不同门派绝学 Lv9（当前 ${diffSectJue9(P)} 家）——故转门派/散人补练绝学是必要而非可能。`};
+  return {ok:true};
+}
+function arenaFoe(tier){
+  const P=S.P, r0={hp:6200};
+  const r= tier===0? {nm:"王重阳",desc:"全真祖师，先天功至阳至刚。（论剑·初·入门档）",scale:1,hp:6200,mech:null}
+          : tier===1? ARENA_T2[P.arenaT2%ARENA_T2.length]
+          : ARENA_T3[P.arenaT3%ARENA_T3.length];
+  const c=combatCfg("wangcy",1);
+  c.name=r.nm; c.desc=r.desc; c.mech=r.mech||null; c.arena=true; c.arenaTier=tier;
+  c.atk=52; c.def=22;  // 论剑对手攻防固定五绝级：难度由血线+机制承载（模拟标定 40~60s）
+  const j=0.95+Math.random()*0.1;
+  c.hp=Math.round(r.hp*j); c.maxHp=c.hp;   // 论剑对手生命取定值，战斗节奏可控（GDD §13）
+  c.exp=Math.round(c.exp*(0.6+r.scale)); c.gold=Math.round(c.gold*(0.6+r.scale));
+  return c;
+}
+function arenaFight(tier){
+  const chk=arenaCheck(tier,S.P);
+  if(!chk.ok){ log(`<span class="system">${chk.msg}</span>`); return; }
+  clearLog();
+  const tNm=["初","名","天下"][tier];
+  log(`<span class="place">【华山论剑 · ${tNm}】</span> 云海之巅，天下英雄等你一战。`);
+  const foe=arenaFoe(tier);
+  S.combat=newCombat(foe);
+  log(`<span class="combat">对手：「${foe.name}」</span>`);
+  log(foe.desc);
+  if(foe.mech) log(`<span class="combat">【${MECH_NM[foe.mech]}】${MECH_CNT[foe.mech]}</span>`);
+  renderCombat();
+}
+/* ---------- 常驻小地图（左上角） ---------- */
+const MINI_XY={yuelai:[188,142],chengwai:[206,124],xiangyang:[244,118],luoyang:[244,58],songshan:[282,92],changan:[120,66],wudang:[190,92],huashan:[176,54],huading:[176,34],zhongnan:[118,106],emei:[90,158],gumu:[156,118],dali:[46,186],wuliang:[70,206],taohua:[286,150],guangming:[20,64],heimuya:[252,26]};
+const MINI_NM={yuelai:"悦来",chengwai:"城外",xiangyang:"襄阳",luoyang:"洛阳",songshan:"少林",changan:"长安",wudang:"武当",huashan:"华山",huading:"论剑台",zhongnan:"终南",emei:"峨眉",gumu:"古墓",dali:"大理",wuliang:"无量",taohua:"桃花岛",guangming:"光明顶",heimuya:"黑木崖"};
+const MINI_HEX={1:"#3b7a3e",3:"#1e5aa8",5:"#7c2f9e",7:"#d9530f",9:"#bb2f21"};
+function renderMinimap(){
+  if(!S||!S.P||!LOCS[S.loc]) return;
+  const P=S.P, cur=LOCS[S.loc];
+  const adj={};
+  cur.ex.forEach(e=>adj[e[1]]=true);
+  // 连线（无向去重）
+  const seen=new Set(), lines=[];
+  Object.keys(LOCS).forEach(id=>{
+    (LOCS[id].ex||[]).forEach(e=>{
+      const b=e[1], k=id<b? id+"/"+b : b+"/"+id;
+      if(seen.has(k)) return; seen.add(k);
+      const A=MINI_XY[id], B=MINI_XY[b];
+      lines.push(`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#c7b78e" stroke-width="1.2" opacity=".55"/>`);
+    });
+  });
+  const nodes=[];
+  Object.keys(LOCS).forEach(id=>{
+    const l=LOCS[id], xy=MINI_XY[id], c=MINI_HEX[colorOf(l.d)];
+    const isCur=id===S.loc, isAdj=!!adj[id], visited=!!P.visit[id];
+    const op= (isCur||isAdj||visited)||l.kind==="city" ? 1 : .4;
+    let shape;
+    if(l.kind==="city") shape=`<rect x="${xy[0]-3.5}" y="${xy[1]-3.5}" width="7" height="7" rx="1.2" fill="${c}"/>`;
+    else if(l.kind==="peak") shape=`<polygon points="${xy[0]},${xy[1]-6} ${xy[0]-6},${xy[1]+4} ${xy[0]+6},${xy[1]+4}" fill="${c}"/>`;
+    else shape=`<circle cx="${xy[0]}" cy="${xy[1]}" r="4.6" fill="${c}"/>`;
+    let extra="";
+    if(isCur) extra=`<circle cx="${xy[0]}" cy="${xy[1]}" r="11" fill="none" stroke="#9c2b1c" stroke-width="2"/>`;
+    else if(isAdj) extra=`<circle cx="${xy[0]}" cy="${xy[1]}" r="8.5" fill="none" stroke="#b48d2f" stroke-width="1.3" stroke-dasharray="2.5 2.5"/>`;
+    const lblY= xy[1]>198 ? xy[1]-10 : xy[1]+13;
+    const fill= isCur? "#9c2b1c" : visited? "#4a4233" : "#9a8d76";
+    const here= isCur? `<text x="${xy[0]}" y="${lblY+10}" font-size="8.5" fill="#a8862f" font-weight="700" text-anchor="middle">▼ 在此</text>` : "";
+    const tip=`${l.nm}（难度${l.d}·${l.kind==="city"?"城":l.kind==="peak"?"论剑台":"野"}${P.dgDone&&LOCS[id].dg?"·已荡平":LOCS[id].dg?"·副本":""}）`;
+    nodes.push(`<g opacity="${op}" cursor="pointer" onclick="mapGo('${id}')"><title>${tip}</title><circle cx="${xy[0]}" cy="${xy[1]}" r="11" fill="transparent"/>${extra}${shape}<text x="${xy[0]}" y="${lblY}" font-size="10" fill="${fill}" font-weight="${isCur?700:400}" text-anchor="middle">${MINI_NM[id]||l.nm}</text>${here}</g>`);
+  });
+  const head=`<div class="mm-head"><span class="t">小地图</span><span class="here">当前：<b>${cur.nm}</b> · 难度${cur.d}</span><button class="mm-x" onclick="miniCollapse(true)" title="收起">—</button></div>`;
+  const foot=`<div class="mm-foot"><span>方=城 圆=野 三角=论剑台</span><b onclick="showMapPanel()">全图</b></div>`;
+  $("minimap").innerHTML = head + `<svg class="mm-svg" viewBox="0 0 300 216" width="288" height="207">${lines.join("")}${nodes.join("")}</svg>` + foot;
+  // 收起态常驻按钮：显示当前地点，保证随时能找回小地图
+  $("mm-pill").innerHTML = `<b>小地图</b><span>（已收起）· 当前：${cur.nm}</span><b>〔展开〕</b>`;
+}
+function mapGo(id){
+  if(!S) return;
+  if(stateInCombat()){ log("激战之中，无暇他顾！"); return; }
+  const loc=LOCS[id], P=S.P;
+  if(id===S.loc){ log(`你正身处【${loc.nm}】（难度${loc.d}）。`); return; }
+  const ex=LOCS[S.loc].ex.find(e=>e[1]===id);
+  if(ex){ moveTo(id); return; }
+  log(`【${loc.nm}】距你所在尚远（难度${loc.d}，${P.visit[id]?"曾到访":"未曾涉足"}）。可先前往相邻之地，再接上图中所指路线。`);
+  showMapPanel();
+}
+function miniCollapse(close){
+  $("minimap").style.display = close? "none":"";
+  $("mm-pill").style.display  = close? "inline-flex":"none";
+}
+/* ---------- 地图 / 指令 ---------- */
+function showMapPanel(){
+  clearLog(); sep();
+  log(`<span class="place">【江湖图志】</span> <span class="legend">${["Lv1-2","Lv3-4","Lv5-6","Lv7-8","Lv9"].map((t,i)=>`<i class="c-d${[1,3,5,7,9][i]}">■${t}</i>`).join("")}</span>`);
+  log(`<span class="tagline">● = 当前所在　城 = 城市(驿站可传送)　野 = 野外　巅 = 华山之巅</span>`);
+  const order=Object.keys(LOCS);
+  order.forEach(id=>{
+    const l=LOCS[id], P=S.P;
+    const icon= id===S.loc?"<span style='color:var(--red);font-weight:700;'>●</span>": l.kind==="city"?"城": l.kind==="peak"?"巅":"野";
+    const exs=l.ex.map(e=>LOCS[e[1]].nm).join("、");
+    const mark=l.kind==="city"&&P.visit[id]?"<span class='system'>已解锁</span>": l.kind==="city"?"灰":l.dg?"<span class='tagline'>(副本)</span>":"";
+    log(`<span class="c-d${colorOf(l.d)}">${icon}</span> <b>${l.nm}</b> [难度${l.d}] ${mark}`);
+    log(`<span class="tagline">　可往：${exs}</span>`);
+  });
+  sep();
+  showActions([{label:"返回",fn:()=>onEnterLocation(S.loc)}]);
+}
+function submitCommand(){
+  const inp=$("cmd-input");
+  const raw=inp.value.trim(); inp.value="";
+  if(!raw) return;
+  const cmd=raw.toLowerCase();
+  log(`<span style="color:var(--ink-faint)">〉${raw}</span>`);
+  if(stateInCombat()){ log("你正在战斗，先了结眼前之事！"); return; }
+  if(["状态","status","s"].includes(cmd)){ showStatus(); return; }
+  if(["武功","skills","skill"].includes(cmd)){ showSkillsPanel(); return; }
+  if(["装备","gear","equip"].includes(cmd)){ showGearPanel(); return; }
+  if(["行囊","背包","bag","items"].includes(cmd)){ showBag(); return; }
+  if(["纪事","任务","quest","journal"].includes(cmd)){ showJournal(); return; }
+  if(["地图","map"].includes(cmd)){ showMapPanel(); return; }
+  if(["帮助","help","h"].includes(cmd)){ showHelp(); return; }
+  if(["看","look","l","观察"].includes(cmd)){ lookAround(); return; }
+  if(["存档","save"].includes(cmd)){ saveGame(); return; }
+  if(["驿站","传送","station"].includes(cmd)){ showStation(); return; }
+  if(["市集","商店","shop"].includes(cmd)){ showMarket(); return; }
+  if(["收工","stop"].includes(cmd)){ stopIdle(); return; }
+  if(["打坐","调息","meditate"].includes(cmd)){ meditate(); return; }
+  if(cmd.startsWith("去")||cmd.startsWith("前往")){
+    const target=raw.replace(/^(去|前往)/,"").trim();
+    goByName(target); return;
+  }
+  const dirMap={n:"北",s:"南",e:"东",w:"西",ne:"东北",nw:"西北",se:"东南",sw:"西南",u:"上",d:"下"};
+  if(dirMap[cmd]){ const ex=LOCS[S.loc].ex.find(x=>x[0]===dirMap[cmd]); if(ex) return moveTo(ex[1]); log("此路不通。"); return; }
+  goByName(raw);
+}
+function goByName(nm){
+  const loc=LOCS[S.loc];
+  const ex=loc.ex.find(e=>LOCS[e[1]].nm.indexOf(nm)>=0||e[0]===nm);
+  if(ex){ moveTo(ex[1]); return; }
+  const found=Object.keys(LOCS).find(id=>LOCS[id].nm.indexOf(nm)>=0);
+  if(found) log(`你需先前往与「${LOCS[found].nm}」相连的地点。输入「地图」查看。`);
+  else log("江湖上没有这处地方。输入「地图」查看。");
+}
+/* ---------- 启动 ---------- */
+function initTitle(){
+  $("import-file");
+  renderSlots();
+  $("help-mask").addEventListener("click",e=>{ if(e.target===$("help-mask")) closeHelp(); });
+  $("confirm-mask").addEventListener("click",e=>{ if(e.target===$("confirm-mask")) closeConfirm(false); });
+}
+initTitle();
+//#A6_END
+</script>
+</body>
+</html>
